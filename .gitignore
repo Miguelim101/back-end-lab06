@@ -1,16 +1,28 @@
-# Compiled class file
+# ==========================================
+# Maven / Build Output (CRITICAL)
+# ==========================================
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing/
+.mvn/wrapper/maven-wrapper.jar
+
+# ==========================================
+# Java / Compiled class files
+# ==========================================
 *.class
-
-# Log file
 *.log
-
-# BlueJ files
 *.ctxt
-
-# Mobile Tools for Java (J2ME)
 .mtj.tmp/
+hs_err_pid*
+replay_pid*
 
-# Package Files #
+# Package Files
 *.jar
 *.war
 *.nar
@@ -19,6 +31,55 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
+# ==========================================
+# Secrets, Credentials, and Environment Variables
+# ==========================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.secret
+*.pkcs12
+*.p12
+*.jks
+credentials.json
+secrets.*
+
+# Local Spring Boot configuration profiles (prevents leaking local DB passwords)
+src/main/resources/*-local.properties
+src/main/resources/*-local.yml
+src/main/resources/*-local.yaml
+
+# ==========================================
+# IDEs and Editors
+# ==========================================
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# VS Code
+.vscode/
+!.vscode/extensions.json
+*.code-workspace
+
+# Eclipse / NetBeans / Other tooling
+.project
+.classpath
+.settings/
+nbproject/
+build/
+nbbuild/
+dist/
+
+# ==========================================
+# Operating System and Temporary Files
+# ==========================================
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
