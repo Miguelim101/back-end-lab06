@@ -381,10 +381,28 @@ todo-fullstack/
 ```
 
 ```text
-Por cuestiones de aprendizaje y recomendación, opté por dos repositorios diferentes: Uno para el backend y el otro para le frontend
+Por cuestiones de aprendizaje y recomendación, opté por dos repositorios diferentes: Uno para el backend y el otro para 
+el frontend.
+
+back-end-lab06/
+│
+├── database/
+│   └── 001_create_schema.sql
+├── src/
+├── docs/
+│
+├── .gitignore
+└── README.md
+
+front-end-lab06/
+│
+├── docs/
+│
+├── .gitignore
+└── README.md
 ```
 
-![scaffolding_backend.png](docs/evidence/scaffolding_backend.png)
+![Scaffolding_backend.png](docs/evidence/p1_scaffolding_backend.png)
 
 ---
 
@@ -427,7 +445,7 @@ Dependencias:
 - Validation
 - Spring Boot Starter Test (AUTOMÁTICA)
 
-![Spring Initializer](docs/evidence/springInitializr.png)
+![Spring Initializer](docs/evidence/p1_springInitializr.png)
 
 Ubicar el proyecto generado dentro del repositorio de back-end:
 
@@ -450,14 +468,14 @@ Además de docuementar la notación del //@SpringBootTests de las pruebas TodoAp
 cd backend
 mvn clean test
 ```
-![mvn clean test](docs/evidence/mvn_clean_test.png)
+![mvn clean test](docs/evidence/p1_mvn_clean_test.png)
 
 Ejecutar:
 
 ```bash
 mvn spring-boot:run
 ```
-![mvn spring-boot:run](docs/evidence/mvn_spring-boot_run.png)
+![mvn spring-boot:run](docs/evidence/p1_mvn_spring-boot_run.png)
 
 ---
 
@@ -466,31 +484,40 @@ mvn spring-boot:run
 Crear los paquetes:
 
 ```text
-backend/
-└── src/
-    ├── main/
-    │   └── java/
-    │       └── edu/eci/dosw/todo/
-    │
-    │           ├── controller/
-    │           ├── service/
-    │           ├── repository/
-    │           ├── entity/
-    │           ├── dto/
-    │           ├── exception/
-    │           ├── config/
-    │           └── TodoApplication.java
-    │
-    └── test/
-        └── java/
-            └── edu/eci/dosw/todo/
+back-end-lab06/
+│
+├── database/
+│   └── 001_create_schema.sql
+├── docs/
+│
+├── src/
+│   ├── main/
+│   │   └── java/
+│   │       └── edu/eci/dosw/todo/
+│   │           ├── controller/
+│   │           ├── service/
+│   │           ├── repository/
+│   │           ├── entity/
+│   │           ├── dto/
+│   │           ├── exception/
+│   │           ├── config/
+│   │           └── TodoApplication.java
+│   │
+│   └── test/
+│       └── java/
+│           └── edu/eci/dosw/todo/
+│
+├── .gitignore
+└── README.md
 ```
 
 ```text
-Como mencioné arriba, al dividir el proyecto en dos servicios distintos, el scaffolding del backend cambió, al colocar en la raiz de la repo, la lógica de la base de datos en la carpeta database/ así como cada una de las carpetas que alojarán la lógica del negocio y demás componentes del servicio.
+Como mencioné anteriormente, al dividir el proyecto en dos microservicios distintos, el scaffolding del backend cambió, 
+al colocar en la raiz de la repo, la lógica de la base de datos en la carpeta database/ así como cada una de 
+las carpetas que alojarán la lógica del negocio y demás componentes del servicio.
 ```
 
-![scaffolding_backend.png](docs/evidence/scaffolding_backend.png)
+![Scaffolding_backend.png](docs/evidence/p1_scaffolding_backend.png)
 
 ---
 
@@ -520,6 +547,7 @@ Deberá aparecer una imagen similar a:
 REPOSITORY   TAG         IMAGE ID       CREATED        SIZE
 postgres     17-alpine   ...
 ```
+![p2_docker_postgresql.png](docs/evidence/p2_docker_postgresql.png)
 
 ---
 
@@ -537,17 +565,11 @@ Contenido:
 CREATE TABLE tasks (
 
     id BIGSERIAL PRIMARY KEY,
-
     title VARCHAR(120) NOT NULL,
-
     description VARCHAR(500),
-
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-
     priority VARCHAR(10) NOT NULL DEFAULT 'MEDIUM',
-
     due_date DATE,
-
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT chk_task_status
@@ -567,6 +589,9 @@ Crear un volumen para conservar la información de la base de datos:
 ```bash
 docker volume create todo-postgres-data
 ```
+![p2_volume.png](docs/evidence/p2_volume.png)
+![p2_volumeCreated.png](docs/evidence/p2_volumeCreated.png)
+
 
 Luego crear y ejecutar el contenedor:
 
@@ -580,6 +605,7 @@ docker run -d \
   -v todo-postgres-data:/var/lib/postgresql/data \
   postgres:17-alpine
 ```
+![p2_run.png](docs/evidence/p2_run.png)
 
 En Windows PowerShell puede ejecutarse en una sola línea:
 
@@ -598,6 +624,8 @@ Consultar los logs:
 ```bash
 docker logs todo-postgres
 ```
+![p2_logs1.png](docs/evidence/p2_logs1.png)
+![p2_logs2.png](docs/evidence/p2_logs2.png)
 
 ---
 
@@ -612,16 +640,19 @@ docker cp database/001_create_schema.sql todo-postgres:/001_create_schema.sql
 Ejecutar el script:
 
 ```bash
-docker exec -i todo-postgres \
+docker exec -it todo-postgres \
   psql -U todo_user -d todo_db \
   -f /001_create_schema.sql
 ```
+![p2_docker_cp.png](docs/evidence/p2_docker_cp.png)
 
 En Windows PowerShell:
 
+
 ```powershell
-docker exec -i todo-postgres psql -U todo_user -d todo_db -f /001_create_schema.sql
+docker exec -it todo-postgres psql -U todo_user -d todo_db -f /001_create_schema.sql
 ```
+![p2_docker_created.png](docs/evidence/p2_docker_created.png)
 
 Conectarse a PostgreSQL:
 
@@ -646,6 +677,7 @@ Salir:
 ```text
 \q
 ```
+![p2_docker_into.png](docs/evidence/p2_docker_into.png)
 
 ---
 
@@ -676,6 +708,7 @@ Para eliminar también los datos:
 ```bash
 docker volume rm todo-postgres-data
 ```
+![p2_docker_basicThings.png](docs/evidence/p2_docker_basicThings.png)
 
 ---
 
