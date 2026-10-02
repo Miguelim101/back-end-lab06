@@ -5,6 +5,13 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * ======================================================================
+ * == PASO 2: Se crea la entidad (el espejo) que permite traducir java ==
+ * ==         a la base de datos mapeando por ORM con JPA            ==
+ * ======================================================================
+ */
+
 @Entity
 @Table(name = "tasks")
 public class TaskEntity {

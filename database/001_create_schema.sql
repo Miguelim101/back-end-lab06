@@ -1,3 +1,7 @@
+--========================================================--
+--= PASO 1: CREAR EL ALMACÉN DONDE SE GUADARÁN LOS DATOS =--
+--========================================================--
+
 CREATE TABLE tasks (
 
     id BIGSERIAL PRIMARY KEY,

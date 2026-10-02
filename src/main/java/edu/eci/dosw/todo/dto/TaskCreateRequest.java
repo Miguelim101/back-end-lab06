@@ -8,6 +8,15 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 /**
+ * ==========================================================================
+ * == PASO 4: Se crean los respectivos filtros para evitar enviar datos    ==
+ * ==         que no se deben mostrar, y constituyen una capa de seguridad ==
+ * ==         para validar lo que el usuario ingresaría y donde se protege ==
+ * ==         la confidencialidad de los datos.                             ==
+ * ==========================================================================
+ */
+
+/**
  * title
  * description
  * priority
@@ -22,7 +31,6 @@ public class TaskCreateRequest {
     @Size(max = 500, message = "La descripción debe tener no más de 500 caracteres")
     private String description;
 
-    @NotBlank(message = "La prioridad no puede ser vacía")
     @Size(max = 10, message = "La prioridad no debe tener maś de 10 caracteres")
     private TaskPriority priority = TaskPriority.MEDIUM;
 

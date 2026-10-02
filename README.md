@@ -442,6 +442,7 @@ Utilizar, según corresponda:
 
 En:
 
+
 ```text
 application.properties
 ```
@@ -455,6 +456,7 @@ spring.datasource.password=${DB_PASSWORD:todo_password}
 
 spring.jpa.hibernate.ddl-auto=validate
 
+
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
 ```
@@ -462,6 +464,7 @@ spring.jpa.properties.hibernate.format_sql=true
 ---
 
 # 18. Crear el Repository
+
 
 Crear:
 
@@ -559,13 +562,9 @@ Definir:
 
 ```java
 List<TaskResponse> findAll();
-
 TaskResponse findById(Long id);
-
 TaskResponse create(TaskCreateRequest request);
-
 TaskResponse update(Long id, TaskUpdateRequest request);
-
 void delete(Long id);
 ```
 
@@ -610,6 +609,15 @@ createdAt = fecha y hora actual
 ```
 
 La prioridad enviada por el usuario puede reemplazar el valor `MEDIUM`.
+
+Los pasos llevados hasta el momento:
+
+![p5_step1.png](docs/evidence/p5_step1.png)
+![p5_step2.png](docs/evidence/p5_step2.png)
+![p5_step3.png](docs/evidence/p5_step3.png)
+![p5_step4.png](docs/evidence/p5_step4.png)
+![p5_step5_1.png](docs/evidence/p5_step5_1.png)
+![p5_step5_2.png](docs/evidence/p5_step5_2.png)
 
 ---
 

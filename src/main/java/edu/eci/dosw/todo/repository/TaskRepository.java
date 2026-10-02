@@ -4,6 +4,12 @@ import edu.eci.dosw.todo.entity.TaskEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+/**
+ * ==========================================================================
+ * == PASO 3: Es una interfaz que hereda de JpaRepository que permite      ==
+ * ==         obtener de manera fácil las operaciones de una base de datos ==
+ * ==========================================================================
+ */
 @Repository
 public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
     // Aquí tenemos todas las operaciones de la base de datos heredadas (incluido todo el GRUD)
