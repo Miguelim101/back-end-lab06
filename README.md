@@ -434,6 +434,7 @@ Utilizar, según corresponda:
 @Column
 @Enumerated
 ```
+![p3_entity.png](docs/evidence/p3_entity.png)
 
 ---
 
@@ -474,10 +475,11 @@ Debe extender:
 JpaRepository<TaskEntity, Long>
 ```
 
+![p3_repository.png](docs/evidence/p3_repository.png)
+
 ---
 
-# PARTE 4 · DTOs
-
+# PARTE 4 · DTOs (Data Transfer Object)
 # 19. Crear los DTOs
 
 Crear:
@@ -505,6 +507,7 @@ No debe recibir:
 id
 createdAt
 ```
+![p4_dto_task_c_r.png](docs/evidence/p4_dto_task_c_r.png)
 
 ---
 
@@ -519,6 +522,9 @@ status
 priority
 dueDate
 ```
+
+![p4_dto_task_u1_r.png](docs/evidence/p4_dto_task_u1_r.png)
+![p4_dto_task_u2_r.png](docs/evidence/p4_dto_task_u2_r.png)
 
 ---
 
@@ -535,6 +541,7 @@ priority
 dueDate
 createdAt
 ```
+![p4_dto_task_r.png](docs/evidence/p4_dto_task_r.png)
 
 ---
 
