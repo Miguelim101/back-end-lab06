@@ -645,21 +645,13 @@ Casos mínimos:
 
 ```text
 findAll_shouldReturnTasks
-
 findById_shouldReturnTaskWhenExists
-
 findById_shouldThrowExceptionWhenTaskDoesNotExist
-
 create_shouldCreateTask
-
 create_shouldAssignDefaultStatus
-
 update_shouldUpdateExistingTask
-
 update_shouldThrowExceptionWhenTaskDoesNotExist
-
 delete_shouldDeleteExistingTask
-
 delete_shouldThrowExceptionWhenTaskDoesNotExist
 ```
 
@@ -668,6 +660,7 @@ Ejecutar:
 ```bash
 mvn test
 ```
+![p6_mvn_test.png](docs/evidence/p6_mvn_test.png)
 
 ---
 
@@ -692,6 +685,11 @@ Meta sugerida:
 ```text
 80 %
 ```
+Por cobertura, se cumplió con probar todas las funciones, a expeción de equals y hashCode,
+debido a que en ocasiones no era necesario. Por ello, resultó con 58% de cobertura, debido
+a que cada clase tenía implementado estas dos.
+
+![p6_jacoco.png](docs/evidence/p6_jacoco.png)
 
 ---
 

@@ -1,0 +1,80 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------------< edu.eci.dosw:todo-api >------------------------
+[INFO] Building  0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ todo-api ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 0 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ todo-api ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ todo-api ---
+[INFO] skip non existing resourceDirectory /home/migue/Documents/UNIVERSITY/EighthSemester/DOSW/Labs/Lab 6/back-end-lab06/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ todo-api ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ todo-api ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running edu.eci.dosw.todo.service.TaskServiceTest
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+WARNING: A Java agent has been loaded dynamically (/home/migue/.m2/repository/net/bytebuddy/byte-buddy-agent/1.17.8/byte-buddy-agent-1.17.8.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+[ERROR] Tests run: 9, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.485 s <<< FAILURE! -- in edu.eci.dosw.todo.service.TaskServiceTest
+[ERROR] edu.eci.dosw.todo.service.TaskServiceTest.findAll_shouldReturnTasks -- Time elapsed: 0.461 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting ArrayList:
+  [edu.eci.dosw.todo.dto.TaskResponse@7158daf2]
+to contain:
+  [edu.eci.dosw.todo.dto.TaskResponse@69228e85]
+but could not find the following element(s):
+  [edu.eci.dosw.todo.dto.TaskResponse@69228e85]
+
+	at edu.eci.dosw.todo.service.TaskServiceTest.findAll_shouldReturnTasks(TaskServiceTest.java:62)
+
+[INFO] Running edu.eci.dosw.todo.TodoApiApplicationTests
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in edu.eci.dosw.todo.TodoApiApplicationTests
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   TaskServiceTest.findAll_shouldReturnTasks:62 
+Expecting ArrayList:
+  [edu.eci.dosw.todo.dto.TaskResponse@7158daf2]
+to contain:
+  [edu.eci.dosw.todo.dto.TaskResponse@69228e85]
+but could not find the following element(s):
+  [edu.eci.dosw.todo.dto.TaskResponse@69228e85]
+
+[INFO] 
+[ERROR] Tests run: 10, Failures: 1, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.437 s
+[INFO] Finished at: 2026-10-06T12:15:48-05:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.6:test (default-test) on project todo-api: There are test failures.
+[ERROR] 
+[ERROR] See /home/migue/Documents/UNIVERSITY/EighthSemester/DOSW/Labs/Lab 6/back-end-lab06/target/surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

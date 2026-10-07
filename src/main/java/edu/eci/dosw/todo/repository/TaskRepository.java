@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
  * ==========================================================================
  */
 @Repository
+// En este caso, <TaskEntity, Long> tiene dos parámetros donde TaskEntity es la clase que tiene que mapear
+// y Long es el tipo de dato que correponde al id de la clase TaskEntity (mapeo por id)
 public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
     // Aquí tenemos todas las operaciones de la base de datos heredadas (incluido todo el GRUD)
     // taskRepository.save(unaTarea); Inserta o actualiza una tarea.

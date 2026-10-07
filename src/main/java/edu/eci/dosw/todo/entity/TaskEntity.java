@@ -1,9 +1,11 @@
 package edu.eci.dosw.todo.entity;
 
+import edu.eci.dosw.todo.dto.TaskResponse;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 /**
  * ======================================================================
@@ -59,10 +61,32 @@ public class TaskEntity {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
     // Bloque para rellenar la fecha automáticamente en Java si creamos una tarea desde el backend
+    /*
     @PrePersist
     protected void onCreate() {
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
         }
+    }
+    */
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TaskEntity that = (TaskEntity) o;
+
+        return Objects.equals(id, that.id) &&
+                Objects.equals(title, that.title) &&
+                Objects.equals(description, that.description) &&
+                Objects.equals(status, that.status) &&
+                Objects.equals(priority, that.priority) &&
+                Objects.equals(dueDate, that.dueDate) &&
+                Objects.equals(createdAt, that.createdAt);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, title, description, status, priority, dueDate, createdAt);
     }
 }

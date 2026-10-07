@@ -8,6 +8,7 @@ import edu.eci.dosw.todo.entity.TaskStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 /**
  * id
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
  * dueDate
  * createdAt
  */
+//@EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL) // Oculta propiedades que vengan en null
 public class TaskResponse {
 
@@ -27,10 +29,10 @@ public class TaskResponse {
     private TaskStatus status = TaskStatus.PENDING;
     private TaskPriority priority = TaskPriority.MEDIUM;
 
-    @JsonFormat(pattern = "dd/MM/yyyy")
+    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate dueDate;
 
-    @JsonFormat(pattern = "dd/MM/yyyy HH:mm:ss")
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
     private LocalDateTime createdAt;
 
     // Constructors
@@ -51,4 +53,24 @@ public class TaskResponse {
     public TaskPriority getPriority() { return this.priority; }
     public LocalDate getDueDate() { return this.dueDate; }
     public LocalDateTime getCreatedAt() { return this.createdAt; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TaskResponse that = (TaskResponse) o;
+
+        return Objects.equals(id, that.id) &&
+                Objects.equals(title, that.title) &&
+                Objects.equals(description, that.description) &&
+                Objects.equals(status, that.status) &&
+                Objects.equals(priority, that.priority) &&
+                Objects.equals(dueDate, that.dueDate) &&
+                Objects.equals(createdAt, that.createdAt);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, title, description, status, priority, dueDate, createdAt);
+    }
 }

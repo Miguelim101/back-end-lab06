@@ -4,7 +4,7 @@ import edu.eci.dosw.todo.entity.TaskPriority;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-
+import java.util.Objects;
 import java.time.LocalDate;
 
 /**
@@ -12,7 +12,7 @@ import java.time.LocalDate;
  * == PASO 4: Se crean los respectivos filtros para evitar enviar datos    ==
  * ==         que no se deben mostrar, y constituyen una capa de seguridad ==
  * ==         para validar lo que el usuario ingresaría y donde se protege ==
- * ==         la confidencialidad de los datos.                             ==
+ * ==         la confidencialidad de los datos.                            ==
  * ==========================================================================
  */
 
@@ -54,8 +54,25 @@ public class TaskCreateRequest {
     public TaskPriority getPriority() { return this.priority; }
     public LocalDate getDueDate() { return this.dueDate; }
 
-    public void setTitle(String title) { this.title = title; }
-    public void setDescription(String description) { this.description = description; }
-    public void setPriority(TaskPriority priority) { this.priority = priority; }
-    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
+    //public void setTitle(String title) { this.title = title; }
+    //public void setDescription(String description) { this.description = description; }
+    //public void setPriority(TaskPriority priority) { this.priority = priority; }
+    //public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TaskCreateRequest that = (TaskCreateRequest) o;
+
+        return Objects.equals(title, that.title) &&
+                Objects.equals(description, that.description) &&
+                Objects.equals(priority, that.priority) &&
+                Objects.equals(dueDate, that.dueDate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(title, description, priority, dueDate);
+    }
 }

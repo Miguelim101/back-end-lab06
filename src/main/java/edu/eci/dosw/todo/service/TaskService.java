@@ -10,7 +10,7 @@ import java.util.List;
  * =================================================================================
  * == PASO 5.1: Esta interfaz establece el contrato que debe seguir la lógica     ==
  * ==         de negocio (este es el modelo para diseñar el cerebro, que sería la ==
- * ==         clase que implementa esta interfaz. Establece el CRUD básico        ==
+ * ==         clase que implementa esta interfaz. Establece el CRUD básico)        ==
  * =================================================================================
  */
 public interface TaskService {

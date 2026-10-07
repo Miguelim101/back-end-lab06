@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 /**
  * title
@@ -55,9 +56,27 @@ public class TaskUpdateRequest {
     public TaskPriority getPriority() { return this.priority; }
     public LocalDate getDueDate() { return this.dueDate; }
 
-    public void setTitle(String title) { this.title = title; }
-    public void setDescription(String description) { this.description = description; }
-    public void setStatus(TaskStatus status) { this.status = status; }
-    public void setPriority(TaskPriority priority) { this.priority = priority; }
-    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
+    // public void setTitle(String title) { this.title = title; }
+    // public void setDescription(String description) { this.description = description; }
+    // public void setStatus(TaskStatus status) { this.status = status; }
+    // public void setPriority(TaskPriority priority) { this.priority = priority; }
+    // public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TaskUpdateRequest that = (TaskUpdateRequest) o;
+
+        return Objects.equals(title, that.title) &&
+                Objects.equals(description, that.description) &&
+                Objects.equals(status, that.status) &&
+                Objects.equals(priority, that.priority) &&
+                Objects.equals(dueDate, that.dueDate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(title, description, status, priority, dueDate);
+    }
 }

@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 /**
  * ======================================================================================
  * == PASO 5.2: Es el cerebro que gestiona la lógica de negocio, donde se implementa   ==
- * ==         el contrato esblecido por la interfaz del servicio. quí se toma la       ==
+ * ==         el contrato esblecido por la interfaz del servicio. Aquí se toma la       ==
  * ==         decisión de qué hacer. El Servicio recibe un DTO limpio del controlador, ==
  * ==         aplica la lógica                                                         ==
  * ======================================================================================
