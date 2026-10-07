@@ -2,9 +2,7 @@ package edu.eci.dosw.todo.dto;
 
 import edu.eci.dosw.todo.entity.TaskPriority;
 import edu.eci.dosw.todo.entity.TaskStatus;
-import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
 import java.util.Objects;
@@ -25,15 +23,13 @@ public class TaskUpdateRequest {
     @Size(max = 500, message = "La descripción debe tener no más de 500 caracteres")
     private String description;
 
-    @NotBlank(message = "El estado no puede ser vacío")
-    @Size(max = 10, message = "El estado no debe tener maś de 20 caracteres")
+    @NotNull(message = "El estado no puede ser vacío")
     private TaskStatus status = TaskStatus.PENDING;
 
-    @NotBlank(message = "La prioridad no puede ser vacía")
-    @Size(max = 10, message = "La prioridad no debe tener maś de 10 caracteres")
+    @NotNull(message = "La prioridad no puede ser vacía")
     private TaskPriority priority = TaskPriority.MEDIUM;
 
-    @Future(message = "La fecha de vencimiento debe ser una fecha futura")
+    @FutureOrPresent(message = "La fecha de vencimiento debe ser una fecha futura")
     private LocalDate dueDate;
 
     // Constructors

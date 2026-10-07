@@ -1,9 +1,8 @@
 package edu.eci.dosw.todo.dto;
 
 import edu.eci.dosw.todo.entity.TaskPriority;
-import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
+
 import java.util.Objects;
 import java.time.LocalDate;
 
@@ -31,10 +30,10 @@ public class TaskCreateRequest {
     @Size(max = 500, message = "La descripción debe tener no más de 500 caracteres")
     private String description;
 
-    @Size(max = 10, message = "La prioridad no debe tener maś de 10 caracteres")
+    @NotNull(message = "La prioridad no debe tener maś de 10 caracteres")
     private TaskPriority priority = TaskPriority.MEDIUM;
 
-    @Future(message = "La fecha de vencimiento debe ser una fecha futura")
+    @FutureOrPresent(message = "La fecha de vencimiento debe ser una fecha futura")
     private LocalDate dueDate;
 
     // Constructors

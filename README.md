@@ -874,9 +874,9 @@ TaskControllerTest.java
 Utilizar:
 
 ```text
-MockMvc
-Mockito
-ObjectMapper
+MockMvc: carga únicamente el contexto web de Spring necesario para el controlador especificado.
+Mockito: 
+ObjectMapper: Es el motor principal de la librería Jackson. En las pruebas de creación (POST) y actualización (PUT), el controlador espera recibir texto en formato JSON. ObjectMapper toma las instancias de Java (ej. TaskCreateRequest) y las serializa, convirtiéndolas en las cadenas JSON exactas que MockMvc enviará en el cuerpo de la petición.
 ```
 
 El Service debe ser simulado.
@@ -901,6 +901,7 @@ PUT /tasks/{id}
 DELETE /tasks/{id}
     existente → 204
 ```
+![p9_controller_test.png](docs/evidence/p9_controller_test.png)
 
 ---
 
