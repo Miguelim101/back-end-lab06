@@ -812,6 +812,8 @@ Respuesta:
 ```http
 204 No Content
 ```
+![p7_task_controller1.png](docs/evidence/p7_task_controller1.png)
+![p7_task_controller2.png](docs/evidence/p7_task_controller2.png)
 
 ---
 
