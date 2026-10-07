@@ -6,6 +6,7 @@ import edu.eci.dosw.todo.dto.TaskUpdateRequest;
 import edu.eci.dosw.todo.entity.TaskEntity;
 import edu.eci.dosw.todo.entity.TaskPriority;
 import edu.eci.dosw.todo.entity.TaskStatus;
+import edu.eci.dosw.todo.exception.TaskNotFoundException;
 import edu.eci.dosw.todo.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,7 +45,7 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     public TaskResponse findById(Long id) {
         TaskEntity task = taskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("TAREA no encontrada con ID " + id));
+                .orElseThrow(() -> new TaskNotFoundException(id));
         return new TaskResponse(task);
     }
 
@@ -75,7 +76,7 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     public TaskResponse update(Long id, TaskUpdateRequest request) {
         TaskEntity existingtTask = taskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("NO existe una tarea con el ID " + id));
+                .orElseThrow(() -> new TaskNotFoundException(id));
 
         existingtTask.setTitle(request.getTitle());
         existingtTask.setDescription(request.getDescription());
@@ -90,7 +91,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public void delete(Long id) {
         if(!taskRepository.existsById(id)){
-            throw new RuntimeException("NO hay una tarea con ID: " + id);
+            throw new TaskNotFoundException(id);
         }
         taskRepository.deleteById(id);
     }

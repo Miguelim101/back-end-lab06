@@ -851,6 +851,13 @@ Ejemplo:
   "message": "Task with id 99 was not found"
 }
 ```
+Refactorización de la clase TaskController
+![p8_refactor.png](docs/evidence/p8_refactor.png)
+
+![p8_exception_extends.png](docs/evidence/p8_exception_extends.png)
+
+![p8_exception_handler.png](docs/evidence/p8_exception_handler.png)
+
 
 ---
 

@@ -6,6 +6,7 @@ import edu.eci.dosw.todo.dto.TaskUpdateRequest;
 import edu.eci.dosw.todo.entity.TaskEntity;
 import edu.eci.dosw.todo.entity.TaskPriority;
 import edu.eci.dosw.todo.entity.TaskStatus;
+import edu.eci.dosw.todo.exception.TaskNotFoundException;
 import edu.eci.dosw.todo.repository.TaskRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,7 +88,8 @@ public class TaskServiceTest {
         when(taskRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> taskServiceImpl.findById(99L))
-                .isInstanceOf(RuntimeException.class);  // Modificar para customer Exception class
+                .isInstanceOf(TaskNotFoundException.class)
+                .hasMessageContaining("Task with id 99 was not found");
     }
 
     // --- PRUEBAS DE CREAR (create) ---
@@ -200,8 +202,8 @@ public class TaskServiceTest {
 
         // Act & Assert
         assertThatThrownBy(() -> taskServiceImpl.update(99L, request))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("NO existe una tarea con el ID 99");
+                .isInstanceOf(TaskNotFoundException.class)
+                .hasMessageContaining("Task with id 99 was not found");
 
         // Verifica que la ejecución se abortó y NUNCA se llamó al método save
         verify(taskRepository, times(1)).findById(99L);
@@ -230,8 +232,8 @@ public class TaskServiceTest {
 
         // Act & Assert
         assertThatThrownBy(() -> taskServiceImpl.delete(99L))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("NO hay una tarea con ID: 99");
+                .isInstanceOf(TaskNotFoundException.class)
+                .hasMessageContaining("Task with id 99 was not found");
 
         // Verifica que se consultó la existencia, pero NUNCA se intentó borrar
         verify(taskRepository, times(1)).existsById(99L);

@@ -8,7 +8,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -29,12 +28,7 @@ public class TaskController {
 
     @GetMapping("/{id}")
     public ResponseEntity<TaskResponse> getTaskById(@PathVariable Long id){
-        try{
-            return ResponseEntity.ok(taskService.findById(id));
-        } catch (RuntimeException e){
-            // Convierte el HTTP 500 originado por tu RuntimeException a HTTP 404
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        }
+        return ResponseEntity.ok(taskService.findById(id));
     }
 
     @PostMapping
@@ -45,22 +39,11 @@ public class TaskController {
 
     @PutMapping("/{id}")
     public ResponseEntity<TaskResponse> updateTask(@PathVariable Long id, @Valid @RequestBody TaskUpdateRequest request){
-        try{
-            return ResponseEntity.ok(taskService.update(id, request));
-        } catch (RuntimeException e){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        }
-
-
+        return ResponseEntity.ok(taskService.update(id, request));
     }
 
     @DeleteMapping("/{id]")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id){
-        try{
-            taskService.delete(id);
-            return ResponseEntity.noContent().build(); // Retorna 204 No Content
-        } catch (RuntimeException e){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        }
+        return ResponseEntity.noContent().build(); // Retorna 204 No Content
     }
 }
