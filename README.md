@@ -886,7 +886,13 @@ Casos mínimos:
 ```text
 GET /tasks → 200
 
-GET /tasks/{id}
+GET /tasks/{id}{
+  "title": "Terminar laboratorio DOSW",
+  "description": "Backend y Front-end terminados",
+  "status": "IN_PROGRESS",
+  "priority": "HIGH",
+  "dueDate": "2026-09-25"
+}
     existente → 200
     inexistente → 404
 
@@ -948,6 +954,54 @@ Ejemplo:
 ```bash
 curl http://localhost:8080/api/v1/tasks
 ```
+
+### mvn spring-boot:run
+
+![p10_mvn_run.png](docs/evidence/p10_mvn_run.png)
+![p10_mnv_running.png](docs/evidence/p10_mvn_running.png)
+
+### Curl
+
+![p10_curl.png](docs/evidence/p10_curl.png)
+
+### Postman
+
+#### 1. POST - Crear tarea (Válido → 201 Created)
+
+![p10_post_valid.png](docs/evidence/p10_post_valid.png)
+
+#### 2. POST - Crear tarea con datos inválidos (Inválido → 400 Bad Request)
+
+![p10_post_invalid.png](docs/evidence/p10_post_invalid.png)
+
+#### 3. GET - Obtener todas las tareas (200 OK)
+
+![p10_get_all.png](docs/evidence/p10_get_all.png)
+
+#### 4. GET - Obtener tarea por ID (Existente → 200 OK)
+
+![p10_get_id.png](docs/evidence/p10_get_id.png)
+
+#### 5. GET - Obtener tarea inexistente (Inexistente → 404 Not Found)
+
+![p10_get_invalid_id.png](docs/evidence/p10_get_invalid_id.png)
+
+#### 6. PUT - Actualizar tarea (Existente → 200 OK)
+
+![p10_put_valid.png](docs/evidence/p10_put_valid.png)
+
+#### 7. PUT - Actualizar tarea inexistente (Inexistente → 404 Not Found)
+
+![p10_put_invalid.png](docs/evidence/p10_put_invalid.png)
+
+#### 8. DELETE - Eliminar tarea (Existente → 204 No Content)
+##### Delete
+![p10_delete_valid.png](docs/evidence/p10_delete_valid.png)
+##### Get, can not find deleted task
+![p10_delete_get_invalid.png](docs/evidence/p10_delete_get_invalid.png)
+
+#### Final console screen
+![p10_final_console.png](docs/evidence/p10_final_console.png)
 
 ---
 
