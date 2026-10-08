@@ -29,10 +29,10 @@ public class TaskResponse {
     private TaskStatus status = TaskStatus.PENDING;
     private TaskPriority priority = TaskPriority.MEDIUM;
 
-    @JsonFormat(pattern = "dd-MM-yyyy")
+    //@JsonFormat(pattern = "dd-MM-yyyy") -> Por facilidad con REST, mejor yyyy-mm-dd como estándar
     private LocalDate dueDate;
 
-    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+    //@JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
     private LocalDateTime createdAt;
 
     // Constructors
