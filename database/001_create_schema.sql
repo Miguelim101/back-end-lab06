@@ -18,3 +18,13 @@ CREATE TABLE tasks (
     CONSTRAINT chk_task_priority
         CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH'))
 );
+
+CREATE TABLE categories(
+
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(40) NOt NULL,
+
+    CONSTRAINT chk_color
+        CHECK (color IN('AZUL','VERDE', 'NARANJA', 'MORADO'))
+
+);

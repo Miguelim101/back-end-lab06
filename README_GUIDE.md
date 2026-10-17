@@ -15,54 +15,53 @@ La actividad consiste en implementar una nueva funcionalidad sobre la aplicació
 > **Plazos obligatorios:**
 > * Entrega inicial en Teams **antes** del inicio.
 > * Publicación del enunciado **después** de la entrega inicial.
->
->
+
 
 Se deben cumplir **TODOS** los ítems de esta sección en la fase previa.
 
 ### A1. Verificar el estado del repositorio
 
-* [ ] Repositorio privado de GitHub con versión **completa y funcional**.
-* [ ] Backend en `back-end-lab06/` y frontend en `front-end-lab06/`.
-* [ ] **Commit inicial estable**. Guardar **captura de pantalla del historial de commits**.
-* [ ] `.gitignore` correcto (no subir `target/`, `node_modules/`, etc.).
+* [X] Repositorio privado de GitHub con versión **completa y funcional**.
+* [X] Backend en `back-end-lab06/` y frontend en `front-end-lab06/`.
+* [X] **Commit inicial estable**. Guardar **captura de pantalla del historial de commits**.
+* [X] `.gitignore` correcto (no subir `target/`, `node_modules/`, etc.).
 
 ### A2. Backend: tenerlo completamente preparado
 
-* [ ] **Compila sin errores:** `mvn clean compile` en `back-end-lab06/`.
-* [ ] **Pruebas existentes en verde:** `mvn test`.
-* [ ] **PostgreSQL con Docker:** contenedor `todo-postgres` corriendo. Verificar con `docker ps`. Arrancar con `docker start todo-postgres` si está detenido.
-* [ ] **application.properties correcto:** Revisar variables `DB_URL`, `DB_USER`, `DB_PASSWORD`. Entender `ddl-auto=validate`.
-* [ ] **CRUD completo funcionando:** Probar `GET`, `GET/{id}`, `POST`, `PUT/{id}`, `DELETE/{id}` (Postman/PowerShell).
-* [ ] **Validaciones y manejo de errores** OK.
-* [ ] **CORS configurado:** `WebConfig.java` permite `http://localhost:5173` y métodos necesarios (añadir `PATCH` si se usará).
+* [X] **Compila sin errores:** `mvn clean compile` en `back-end-lab06/`.
+* [X] **Pruebas existentes en verde:** `mvn test`.
+* [X] **PostgreSQL con Docker:** contenedor `todo-postgres` corriendo. Verificar con `docker ps`. Arrancar con `docker start todo-postgres` si está detenido.
+* [X] **application.properties correcto:** Revisar variables `DB_URL`, `DB_USER`, `DB_PASSWORD`. Entender `ddl-auto=validate`.
+* [X] **CRUD completo funcionando:** Probar `GET`, `GET/{id}`, `POST`, `PUT/{id}`, `DELETE/{id}` (Postman/PowerShell).
+* [X] **Validaciones y manejo de errores** OK.
+* [X] **CORS configurado:** `WebConfig.java` permite `http://localhost:5173` y métodos necesarios (añadir `PATCH` si se usará).
 
 ### A3. Frontend: tenerlo completamente preparado
 
-* [ ] `npm install` ejecutado (o `node_modules` estable).
-* [ ] `npm run dev` funciona en `http://localhost:5173`.
-* [ ] Comunicación backend-frontend verificada end-to-end.
+* [X] `npm install` ejecutado (o `node_modules` estable).
+* [X] `npm run dev` funciona en `.
+* [X] Comunicación backend-frontend verificada end-to-end.
 * [ ] Estructura en `features/tasks/` y `api/taskApi.js` correcta.
-* [ ] Sin warnings críticos en consola.
+* [X] Sin warnings críticos en consola.
 
 ### A4. Entrega inicial obligatoria
 
-* [ ] Invitar a `rodrigogualtero92@gmail.com` al repositorio privado (permisos suficientes).
-* [ ] Push de versión inicial **antes** del inicio.
-* [ ] Captura de historial de commits guardada.
-* [ ] Entregar en Teams: enlace del repo, captura y confirmación de invitación **antes** de iniciar (repositorios con commits posteriores a la entrega inicial carecen de validez en esta fase).
+* [X] Invitar a `rodrigogualtero92@gmail.com` al repositorio privado (permisos suficientes).
+* [X] Push de versión inicial **antes** del inicio.
+* [X] Captura de historial de commits guardada.
+* [X] Entregar en Teams: enlace del repo, captura y confirmación de invitación **antes** de iniciar (repositorios con commits posteriores a la entrega inicial carecen de validez en esta fase).
 
 ### A5. Verificación integral previa
 
-* [ ] Flujo completo: crear → consultar → editar → eliminar **desde React hasta PostgreSQL**.
-* [ ] Arranque simultáneo backend y frontend OK.
+* [X] Flujo completo: crear → consultar → editar → eliminar **desde React hasta PostgreSQL**.
+* [X] Arranque simultáneo backend y frontend OK.
 
 ---
 
 ## 3. SECCIÓN B: AL RECIBIR EL ENUNCIADO (DESPUÉS DEL INICIO)
 
-* [ ] Leer enunciado completo (requerimiento + mockup).
-* [ ] Identificar entidades, atributos, reglas, estados, validaciones, flujos.
+* [X] Leer enunciado completo (requerimiento + mockup).
+* [X] Identificar entidades, atributos, reglas, estados, validaciones, flujos.
 
 ---
 
