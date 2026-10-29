@@ -6,6 +6,7 @@ import edu.eci.dosw.todo.dto.TaskUpdateRequest;
 import edu.eci.dosw.todo.entity.TaskEntity;
 import edu.eci.dosw.todo.entity.TaskPriority;
 import edu.eci.dosw.todo.entity.TaskStatus;
+import edu.eci.dosw.todo.exception.InvalidDateRangeException;
 import edu.eci.dosw.todo.exception.TaskNotFoundException;
 import edu.eci.dosw.todo.repository.TaskRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -238,6 +239,48 @@ public class TaskServiceTest {
         // Verifica que se consultó la existencia, pero NUNCA se intentó borrar
         verify(taskRepository, times(1)).existsById(99L);
         verify(taskRepository, never()).deleteById(anyLong());
+    }
+
+    // --- PRUEBAS DE RANGO DE FECHAS (findByDueDateBetween) · BONUS CALENDARIO ---
+
+    @Test
+    void findByDueDateBetween_shouldReturnTasksInRange(){
+        // Arrange
+        LocalDate from = LocalDate.of(2026, 9, 21);
+        LocalDate to = LocalDate.of(2026, 9, 27);
+        sampleTask.setDueDate(LocalDate.of(2026, 9, 23));
+        when(taskRepository.findByDueDateBetween(from, to)).thenReturn(List.of(sampleTask));
+
+        // Act
+        List<TaskResponse> result = taskServiceImpl.findByDueDateBetween(from, to);
+
+        // Assert
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(1L);
+        assertThat(result.get(0).getDueDate()).isEqualTo(LocalDate.of(2026, 9, 23));
+        verify(taskRepository, times(1)).findByDueDateBetween(from, to);
+    }
+
+    @Test
+    void findByDueDateBetween_shouldThrowExceptionWhenFromIsAfterTo(){
+        LocalDate from = LocalDate.of(2026, 9, 27);
+        LocalDate to = LocalDate.of(2026, 9, 21);
+
+        assertThatThrownBy(() -> taskServiceImpl.findByDueDateBetween(from, to))
+                .isInstanceOf(InvalidDateRangeException.class);
+
+        // Un rango inválido nunca debe llegar a la base de datos
+        verify(taskRepository, never()).findByDueDateBetween(any(), any());
+    }
+
+    @Test
+    void findByDueDateBetween_shouldThrowExceptionWhenDateIsMissing(){
+        assertThatThrownBy(() -> taskServiceImpl.findByDueDateBetween(LocalDate.of(2026, 9, 21), null))
+                .isInstanceOf(InvalidDateRangeException.class);
+        assertThatThrownBy(() -> taskServiceImpl.findByDueDateBetween(null, LocalDate.of(2026, 9, 27)))
+                .isInstanceOf(InvalidDateRangeException.class);
+
+        verify(taskRepository, never()).findByDueDateBetween(any(), any());
     }
 
 }

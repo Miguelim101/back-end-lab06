@@ -6,6 +6,7 @@ import edu.eci.dosw.todo.dto.TaskUpdateRequest;
 import edu.eci.dosw.todo.entity.TaskEntity;
 import edu.eci.dosw.todo.entity.TaskPriority;
 import edu.eci.dosw.todo.entity.TaskStatus;
+import edu.eci.dosw.todo.exception.InvalidDateRangeException;
 import edu.eci.dosw.todo.exception.TaskNotFoundException;
 import edu.eci.dosw.todo.service.TaskService;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +24,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -174,5 +176,51 @@ class TaskControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(taskService).delete(1L);
+    }
+
+    // ---------- GET /tasks?from=&to= (BONUS calendario) ----------
+
+    @Test
+    @DisplayName("GET /tasks?from&to válido → 200")
+    void getTasksByRange_valid_returns200() throws Exception {
+        LocalDate from = LocalDate.of(2026, 9, 21);
+        LocalDate to = LocalDate.of(2026, 9, 27);
+        when(taskService.findByDueDateBetween(from, to))
+                .thenReturn(List.of(buildResponse(1L, "Lab DOSW", "Entrega del bono")));
+
+        mockMvc.perform(get(BASE_URL).param("from", "2026-09-21").param("to", "2026-09-27"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].title").value("Lab DOSW"));
+
+        verify(taskService).findByDueDateBetween(from, to);
+    }
+
+    @Test
+    @DisplayName("GET /tasks?from&to rango invertido → 400")
+    void getTasksByRange_invertedRange_returns400() throws Exception {
+        when(taskService.findByDueDateBetween(any(), any()))
+                .thenThrow(new InvalidDateRangeException("'from' date must be before or equal to 'to' date"));
+
+        mockMvc.perform(get(BASE_URL).param("from", "2026-09-27").param("to", "2026-09-21"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("GET /tasks?from (sin to) → 400")
+    void getTasksByRange_missingParam_returns400() throws Exception {
+        when(taskService.findByDueDateBetween(any(), isNull()))
+                .thenThrow(new InvalidDateRangeException("Both 'from' and 'to' dates are required"));
+
+        mockMvc.perform(get(BASE_URL).param("from", "2026-09-21"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET /tasks?from&to con formato inválido → 400")
+    void getTasksByRange_invalidFormat_returns400() throws Exception {
+        mockMvc.perform(get(BASE_URL).param("from", "21-09-2026").param("to", "2026-09-27"))
+                .andExpect(status().isBadRequest());
     }
 }

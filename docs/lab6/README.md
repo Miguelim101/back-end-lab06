@@ -55,7 +55,7 @@ front-end-lab06/
 └── README.md
 ```
 
-![Scaffolding_backend.png](docs/evidence/p1_scaffolding_backend.png)
+![Scaffolding_backend.png](evidence/p1_scaffolding_backend.png)
 
 ---
 
@@ -98,7 +98,7 @@ Dependencias:
 - Validation
 - Spring Boot Starter Test (AUTOMÁTICA)
 
-![Spring Initializer](docs/evidence/p1_springInitializr.png)
+![Spring Initializer](evidence/p1_springInitializr.png)
 
 Ubicar el proyecto generado dentro del repositorio de back-end:
 
@@ -121,14 +121,14 @@ Además de docuementar la notación del //@SpringBootTests de las pruebas TodoAp
 cd backend
 mvn clean test
 ```
-![mvn clean test](docs/evidence/p1_mvn_clean_test.png)
+![mvn clean test](evidence/p1_mvn_clean_test.png)
 
 Ejecutar:
 
 ```bash
 mvn spring-boot:run
 ```
-![mvn spring-boot:run](docs/evidence/p1_mvn_spring-boot_run.png)
+![mvn spring-boot:run](evidence/p1_mvn_spring-boot_run.png)
 
 ---
 
@@ -170,7 +170,7 @@ al colocar en la raiz de la repo, la lógica de la base de datos en la carpeta d
 las carpetas que alojarán la lógica del negocio y demás componentes del servicio.
 ```
 
-![Scaffolding_backend.png](docs/evidence/p1_scaffolding_backend.png)
+![Scaffolding_backend.png](evidence/p1_scaffolding_backend.png)
 
 ---
 
@@ -200,7 +200,7 @@ Deberá aparecer una imagen similar a:
 REPOSITORY   TAG         IMAGE ID       CREATED        SIZE
 postgres     17-alpine   ...
 ```
-![p2_docker_postgresql.png](docs/evidence/p2_docker_postgresql.png)
+![p2_docker_postgresql.png](evidence/p2_docker_postgresql.png)
 
 ---
 
@@ -242,8 +242,8 @@ Crear un volumen para conservar la información de la base de datos:
 ```bash
 docker volume create todo-postgres-data
 ```
-![p2_volume.png](docs/evidence/p2_volume.png)
-![p2_volumeCreated.png](docs/evidence/p2_volumeCreated.png)
+![p2_volume.png](evidence/p2_volume.png)
+![p2_volumeCreated.png](evidence/p2_volumeCreated.png)
 
 
 Luego crear y ejecutar el contenedor:
@@ -258,7 +258,7 @@ docker run -d \
   -v todo-postgres-data:/var/lib/postgresql/data \
   postgres:17-alpine
 ```
-![p2_run.png](docs/evidence/p2_run.png)
+![p2_run.png](evidence/p2_run.png)
 
 En Windows PowerShell puede ejecutarse en una sola línea:
 
@@ -277,8 +277,8 @@ Consultar los logs:
 ```bash
 docker logs todo-postgres
 ```
-![p2_logs1.png](docs/evidence/p2_logs1.png)
-![p2_logs2.png](docs/evidence/p2_logs2.png)
+![p2_logs1.png](evidence/p2_logs1.png)
+![p2_logs2.png](evidence/p2_logs2.png)
 
 ---
 
@@ -297,7 +297,7 @@ docker exec -it todo-postgres \
   psql -U todo_user -d todo_db \
   -f /001_create_schema.sql
 ```
-![p2_docker_cp.png](docs/evidence/p2_docker_cp.png)
+![p2_docker_cp.png](evidence/p2_docker_cp.png)
 
 En Windows PowerShell:
 
@@ -305,7 +305,7 @@ En Windows PowerShell:
 ```powershell
 docker exec -it todo-postgres psql -U todo_user -d todo_db -f /001_create_schema.sql
 ```
-![p2_docker_created.png](docs/evidence/p2_docker_created.png)
+![p2_docker_created.png](evidence/p2_docker_created.png)
 
 Conectarse a PostgreSQL:
 
@@ -330,7 +330,7 @@ Salir:
 ```text
 \q
 ```
-![p2_docker_into.png](docs/evidence/p2_docker_into.png)
+![p2_docker_into.png](evidence/p2_docker_into.png)
 
 ---
 
@@ -361,7 +361,7 @@ Para eliminar también los datos:
 ```bash
 docker volume rm todo-postgres-data
 ```
-![p2_docker_basicThings.png](docs/evidence/p2_docker_basicThings.png)
+![p2_docker_basicThings.png](evidence/p2_docker_basicThings.png)
 
 ---
 
@@ -434,7 +434,7 @@ Utilizar, según corresponda:
 @Column
 @Enumerated
 ```
-![p3_entity.png](docs/evidence/p3_entity.png)
+![p3_entity.png](evidence/p3_entity.png)
 
 ---
 
@@ -478,7 +478,7 @@ Debe extender:
 JpaRepository<TaskEntity, Long>
 ```
 
-![p3_repository.png](docs/evidence/p3_repository.png)
+![p3_repository.png](evidence/p3_repository.png)
 
 ---
 
@@ -510,7 +510,7 @@ No debe recibir:
 id
 createdAt
 ```
-![p4_dto_task_c_r.png](docs/evidence/p4_dto_task_c_r.png)
+![p4_dto_task_c_r.png](evidence/p4_dto_task_c_r.png)
 
 ---
 
@@ -526,8 +526,8 @@ priority
 dueDate
 ```
 
-![p4_dto_task_u1_r.png](docs/evidence/p4_dto_task_u1_r.png)
-![p4_dto_task_u2_r.png](docs/evidence/p4_dto_task_u2_r.png)
+![p4_dto_task_u1_r.png](evidence/p4_dto_task_u1_r.png)
+![p4_dto_task_u2_r.png](evidence/p4_dto_task_u2_r.png)
 
 ---
 
@@ -544,7 +544,7 @@ priority
 dueDate
 createdAt
 ```
-![p4_dto_task_r.png](docs/evidence/p4_dto_task_r.png)
+![p4_dto_task_r.png](evidence/p4_dto_task_r.png)
 
 ---
 
@@ -612,12 +612,12 @@ La prioridad enviada por el usuario puede reemplazar el valor `MEDIUM`.
 
 Los pasos llevados hasta el momento:
 
-![p5_step1.png](docs/evidence/p5_step1.png)
-![p5_step2.png](docs/evidence/p5_step2.png)
-![p5_step3.png](docs/evidence/p5_step3.png)
-![p5_step4.png](docs/evidence/p5_step4.png)
-![p5_step5_1.png](docs/evidence/p5_step5_1.png)
-![p5_step5_2.png](docs/evidence/p5_step5_2.png)
+![p5_step1.png](evidence/p5_step1.png)
+![p5_step2.png](evidence/p5_step2.png)
+![p5_step3.png](evidence/p5_step3.png)
+![p5_step4.png](evidence/p5_step4.png)
+![p5_step5_1.png](evidence/p5_step5_1.png)
+![p5_step5_2.png](evidence/p5_step5_2.png)
 
 ---
 
@@ -660,13 +660,13 @@ Ejecutar:
 ```bash
 mvn test
 ```
-![p6_mvn_test.png](docs/evidence/p6_mvn_test.png)
+![p6_mvn_test.png](evidence/p6_mvn_test.png)
 
 ---
 
 # 24. JaCoCo
 
-Adicionar JaCoCo al `pom.xml`.
+Adicionar JaCoCo al `../../pom.xml`.
 
 Ejecutar:
 
@@ -689,7 +689,7 @@ Por cobertura, se cumplió con probar todas las funciones, a expeción de equals
 debido a que en ocasiones no era necesario. Por ello, resultó con 58% de cobertura, debido
 a que cada clase tenía implementado estas dos.
 
-![p6_jacoco.png](docs/evidence/p6_jacoco.png)
+![p6_jacoco.png](evidence/p6_jacoco.png)
 
 ---
 
@@ -812,8 +812,8 @@ Respuesta:
 ```http
 204 No Content
 ```
-![p7_task_controller1.png](docs/evidence/p7_task_controller1.png)
-![p7_task_controller2.png](docs/evidence/p7_task_controller2.png)
+![p7_task_controller1.png](evidence/p7_task_controller1.png)
+![p7_task_controller2.png](evidence/p7_task_controller2.png)
 
 ---
 
@@ -852,11 +852,11 @@ Ejemplo:
 }
 ```
 Refactorización de la clase TaskController
-![p8_refactor.png](docs/evidence/p8_refactor.png)
+![p8_refactor.png](evidence/p8_refactor.png)
 
-![p8_exception_extends.png](docs/evidence/p8_exception_extends.png)
+![p8_exception_extends.png](evidence/p8_exception_extends.png)
 
-![p8_exception_handler.png](docs/evidence/p8_exception_handler.png)
+![p8_exception_handler.png](evidence/p8_exception_handler.png)
 
 
 ---
@@ -907,7 +907,7 @@ PUT /tasks/{id}
 DELETE /tasks/{id}
     existente → 204
 ```
-![p9_controller_test.png](docs/evidence/p9_controller_test.png)
+![p9_controller_test.png](evidence/p9_controller_test.png)
 
 ---
 
@@ -957,51 +957,51 @@ curl http://localhost:8080/api/v1/tasks
 
 ### mvn spring-boot:run
 
-![p10_mvn_run.png](docs/evidence/p10_mvn_run.png)
-![p10_mnv_running.png](docs/evidence/p10_mvn_running.png)
+![p10_mvn_run.png](evidence/p10_mvn_run.png)
+![p10_mnv_running.png](evidence/p10_mvn_running.png)
 
 ### Curl
 
-![p10_curl.png](docs/evidence/p10_curl.png)
+![p10_curl.png](evidence/p10_curl.png)
 
 ### Postman
 
 #### 1. POST - Crear tarea (Válido → 201 Created)
 
-![p10_post_valid.png](docs/evidence/p10_post_valid.png)
+![p10_post_valid.png](evidence/p10_post_valid.png)
 
 #### 2. POST - Crear tarea con datos inválidos (Inválido → 400 Bad Request)
 
-![p10_post_invalid.png](docs/evidence/p10_post_invalid.png)
+![p10_post_invalid.png](evidence/p10_post_invalid.png)
 
 #### 3. GET - Obtener todas las tareas (200 OK)
 
-![p10_get_all.png](docs/evidence/p10_get_all.png)
+![p10_get_all.png](evidence/p10_get_all.png)
 
 #### 4. GET - Obtener tarea por ID (Existente → 200 OK)
 
-![p10_get_id.png](docs/evidence/p10_get_id.png)
+![p10_get_id.png](evidence/p10_get_id.png)
 
 #### 5. GET - Obtener tarea inexistente (Inexistente → 404 Not Found)
 
-![p10_get_invalid_id.png](docs/evidence/p10_get_invalid_id.png)
+![p10_get_invalid_id.png](evidence/p10_get_invalid_id.png)
 
 #### 6. PUT - Actualizar tarea (Existente → 200 OK)
 
-![p10_put_valid.png](docs/evidence/p10_put_valid.png)
+![p10_put_valid.png](evidence/p10_put_valid.png)
 
 #### 7. PUT - Actualizar tarea inexistente (Inexistente → 404 Not Found)
 
-![p10_put_invalid.png](docs/evidence/p10_put_invalid.png)
+![p10_put_invalid.png](evidence/p10_put_invalid.png)
 
 #### 8. DELETE - Eliminar tarea (Existente → 204 No Content)
 ##### Delete
-![p10_delete_valid.png](docs/evidence/p10_delete_valid.png)
+![p10_delete_valid.png](evidence/p10_delete_valid.png)
 ##### Get, can not find deleted task
-![p10_delete_get_invalid.png](docs/evidence/p10_delete_get_invalid.png)
+![p10_delete_get_invalid.png](evidence/p10_delete_get_invalid.png)
 
 #### Final console screen
-![p10_final_console.png](docs/evidence/p10_final_console.png)
+![p10_final_console.png](evidence/p10_final_console.png)
 
 ---
 
@@ -1026,7 +1026,7 @@ y permitir el origen:
 ```text
 http://localhost:5173
 ```
-![p12_cors.png](docs/evidence/p12_cors.png)
+![p12_cors.png](evidence/p12_cors.png)
 
 ---
 
@@ -1146,8 +1146,11 @@ GET /api/v1/tasks?from=2026-09-21&to=2026-09-27
 En el Repository:
 
 ```java
-findByDueDateBetween(...)
+findByDueDateBetween(...) 
+
 ```
+
+![p15_calendar.png](evidence/p15_calendar.png)
 
 ---
 

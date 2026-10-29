@@ -4,6 +4,9 @@ import edu.eci.dosw.todo.entity.TaskEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.util.List;
+
 /**
  * ==========================================================================
  * == PASO 3: Es una interfaz que hereda de JpaRepository que permite      ==
@@ -19,4 +22,8 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
     // taskRepository.findAll(); Devuelve una lista con todas las tareas.
     // taskRepository.findById(1L); Busca una tarea por su ID.
     // taskRepository.deleteById(1L); Elimina una tarea por su ID.
+
+    // BONUS (calendario semanal): Spring Data genera la consulta a partir del nombre del método
+    // -> SELECT * FROM tasks WHERE due_date BETWEEN :from AND :to (ambos extremos incluidos)
+    List<TaskEntity> findByDueDateBetween(LocalDate from, LocalDate to);
 }

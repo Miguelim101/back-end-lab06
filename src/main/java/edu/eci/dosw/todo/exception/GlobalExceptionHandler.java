@@ -19,4 +19,13 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody);
     }
+
+    @ExceptionHandler(InvalidDateRangeException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidDateRangeException(InvalidDateRangeException ex) {
+        Map<String, Object> errorBody = new HashMap<>();
+        errorBody.put("status", HttpStatus.BAD_REQUEST.value());
+        errorBody.put("message", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody);
+    }
 }

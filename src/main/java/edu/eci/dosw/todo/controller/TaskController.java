@@ -5,10 +5,12 @@ import edu.eci.dosw.todo.dto.TaskResponse;
 import edu.eci.dosw.todo.dto.TaskUpdateRequest;
 import edu.eci.dosw.todo.service.TaskService;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -22,8 +24,14 @@ public class TaskController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TaskResponse>> getAllTasks(){
-        return ResponseEntity.ok(taskService.findAll());
+    public ResponseEntity<List<TaskResponse>> getAllTasks(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to){
+        // Sin parámetros se conserva el listado completo; con rango (BONUS calendario) se filtra por dueDate
+        if (from == null && to == null) {
+            return ResponseEntity.ok(taskService.findAll());
+        }
+        return ResponseEntity.ok(taskService.findByDueDateBetween(from, to));
     }
 
     @GetMapping("/{id}")

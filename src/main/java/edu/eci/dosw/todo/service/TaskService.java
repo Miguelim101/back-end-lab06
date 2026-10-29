@@ -4,6 +4,7 @@ import edu.eci.dosw.todo.dto.TaskCreateRequest;
 import edu.eci.dosw.todo.dto.TaskResponse;
 import edu.eci.dosw.todo.dto.TaskUpdateRequest;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -19,4 +20,7 @@ public interface TaskService {
     TaskResponse create(TaskCreateRequest request);
     TaskResponse update(Long id, TaskUpdateRequest request);
     void delete(Long id);
+
+    // BONUS (calendario semanal): tareas cuya fecha límite está entre from y to (incluidos)
+    List<TaskResponse> findByDueDateBetween(LocalDate from, LocalDate to);
 }

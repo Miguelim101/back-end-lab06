@@ -6,11 +6,13 @@ import edu.eci.dosw.todo.dto.TaskUpdateRequest;
 import edu.eci.dosw.todo.entity.TaskEntity;
 import edu.eci.dosw.todo.entity.TaskPriority;
 import edu.eci.dosw.todo.entity.TaskStatus;
+import edu.eci.dosw.todo.exception.InvalidDateRangeException;
 import edu.eci.dosw.todo.exception.TaskNotFoundException;
 import edu.eci.dosw.todo.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -94,5 +96,21 @@ public class TaskServiceImpl implements TaskService {
             throw new TaskNotFoundException(id);
         }
         taskRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskResponse> findByDueDateBetween(LocalDate from, LocalDate to) {
+        // El rango debe estar completo y ser coherente antes de consultar la base de datos
+        if (from == null || to == null) {
+            throw new InvalidDateRangeException("Both 'from' and 'to' dates are required");
+        }
+        if (from.isAfter(to)) {
+            throw new InvalidDateRangeException("'from' date must be before or equal to 'to' date");
+        }
+
+        return taskRepository.findByDueDateBetween(from, to).stream()
+                .map(TaskResponse::new)
+                .collect(Collectors.toList());
     }
 }
