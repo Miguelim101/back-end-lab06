@@ -83,6 +83,15 @@
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.12</version> <!-- Compatible con Java 21 -->
+				<configuration>
+					<excludes>
+						<!-- Clase de arranque de Spring Boot (solo invoca SpringApplication.run) -->
+						<exclude>edu/eci/dosw/todo/TodoApiApplication.class</exclude>
+						<!-- POJOs de transporte y mapeo JPA: getters, constructores, equals/hashCode -->
+						<exclude>edu/eci/dosw/todo/dto/**</exclude>
+						<exclude>edu/eci/dosw/todo/entity/**</exclude>
+					</excludes>
+				</configuration>
 				<executions>
 					<execution>
 						<id>prepare-agent</id>
@@ -96,6 +105,28 @@
 						<goals>
 							<goal>report</goal>
 						</goals>
+					</execution>
+					<!-- mvn verify falla si la cobertura de instrucciones baja del 70 % -->
+					<execution>
+						<id>check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>INSTRUCTION</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.70</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

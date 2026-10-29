@@ -66,7 +66,7 @@ class TaskControllerTest {
 
     @Test
     @DisplayName("GET /tasks → 200")
-    void getAllTasks_returns200() throws Exception {
+    void getAllTasks_shouldReturn200() throws Exception {
         when(taskService.findAll())
                 .thenReturn(List.of(buildResponse(1L, "Estudiar", "Repasar Spring")));
 
@@ -82,7 +82,7 @@ class TaskControllerTest {
 
     @Test
     @DisplayName("GET /tasks/{id} existente → 200")
-    void getTaskById_existing_returns200() throws Exception {
+    void getTaskById_shouldReturn200WhenTaskExists() throws Exception {
         when(taskService.findById(1L))
                 .thenReturn(buildResponse(1L, "Estudiar", "Repasar Spring"));
 
@@ -94,7 +94,7 @@ class TaskControllerTest {
 
     @Test
     @DisplayName("GET /tasks/{id} inexistente → 404")
-    void getTaskById_notFound_returns404() throws Exception {
+    void getTaskById_shouldReturn404WhenTaskDoesNotExist() throws Exception {
         when(taskService.findById(99L)).thenThrow(new TaskNotFoundException(99L));
 
         mockMvc.perform(get(BASE_URL + "/{id}", 99L))
@@ -106,7 +106,7 @@ class TaskControllerTest {
 
     @Test
     @DisplayName("POST /tasks válido → 201")
-    void createTask_valid_returns201() throws Exception {
+    void createTask_shouldReturn201WhenRequestIsValid() throws Exception {
         TaskCreateRequest request = new TaskCreateRequest(
                 "Estudiar", "BASE_URRepasar Spring", TaskPriority.MEDIUM, LocalDate.now().plusDays(7));
         when(taskService.create(any(TaskCreateRequest.class)))
@@ -122,7 +122,7 @@ class TaskControllerTest {
 
     @Test
     @DisplayName("POST /tasks inválido (título vacío) → 400")
-    void createTask_invalid_returns400() throws Exception {
+    void createTask_shouldReturn400WhenTitleIsBlank() throws Exception {
         TaskCreateRequest invalid = new TaskCreateRequest(
                 "", "Sin título", TaskPriority.MEDIUM, LocalDate.now().plusDays(7));
 
@@ -136,7 +136,7 @@ class TaskControllerTest {
 
     @Test
     @DisplayName("PUT /tasks/{id} existente → 200")
-    void updateTask_existing_returns200() throws Exception {
+    void updateTask_shouldReturn200WhenTaskExists() throws Exception {
         TaskUpdateRequest request = new TaskUpdateRequest(
                 "Estudiar más", "Repasar JPA", TaskStatus.PENDING, TaskPriority.MEDIUM,
                 LocalDate.now().plusDays(10));
@@ -152,7 +152,7 @@ class TaskControllerTest {
 
     @Test
     @DisplayName("PUT /tasks/{id} inexistente → 404")
-    void updateTask_notFound_returns404() throws Exception {
+    void updateTask_shouldReturn404WhenTaskDoesNotExist() throws Exception {
         TaskUpdateRequest request = new TaskUpdateRequest(
                 "Estudiar más", "Repasar JPA", TaskStatus.PENDING, TaskPriority.MEDIUM,
                 LocalDate.now().plusDays(10));
@@ -169,7 +169,7 @@ class TaskControllerTest {
 
     @Test
     @DisplayName("DELETE /tasks/{id} existente → 204")
-    void deleteTask_existing_returns204() throws Exception {
+    void deleteTask_shouldReturn204WhenTaskExists() throws Exception {
         doNothing().when(taskService).delete(1L);
 
         mockMvc.perform(delete(BASE_URL + "/{id}", 1L))
@@ -182,7 +182,7 @@ class TaskControllerTest {
 
     @Test
     @DisplayName("GET /tasks?from&to válido → 200")
-    void getTasksByRange_valid_returns200() throws Exception {
+    void getTasksByRange_shouldReturn200WhenRangeIsValid() throws Exception {
         LocalDate from = LocalDate.of(2026, 9, 21);
         LocalDate to = LocalDate.of(2026, 9, 27);
         when(taskService.findByDueDateBetween(from, to))
@@ -198,7 +198,7 @@ class TaskControllerTest {
 
     @Test
     @DisplayName("GET /tasks?from&to rango invertido → 400")
-    void getTasksByRange_invertedRange_returns400() throws Exception {
+    void getTasksByRange_shouldReturn400WhenFromIsAfterTo() throws Exception {
         when(taskService.findByDueDateBetween(any(), any()))
                 .thenThrow(new InvalidDateRangeException("'from' date must be before or equal to 'to' date"));
 
@@ -209,7 +209,7 @@ class TaskControllerTest {
 
     @Test
     @DisplayName("GET /tasks?from (sin to) → 400")
-    void getTasksByRange_missingParam_returns400() throws Exception {
+    void getTasksByRange_shouldReturn400WhenToIsMissing() throws Exception {
         when(taskService.findByDueDateBetween(any(), isNull()))
                 .thenThrow(new InvalidDateRangeException("Both 'from' and 'to' dates are required"));
 
@@ -218,8 +218,18 @@ class TaskControllerTest {
     }
 
     @Test
+    @DisplayName("GET /tasks?to (sin from) → 400")
+    void getTasksByRange_shouldReturn400WhenFromIsMissing() throws Exception {
+        when(taskService.findByDueDateBetween(isNull(), any()))
+                .thenThrow(new InvalidDateRangeException("Both 'from' and 'to' dates are required"));
+
+        mockMvc.perform(get(BASE_URL).param("to", "2026-09-27"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("GET /tasks?from&to con formato inválido → 400")
-    void getTasksByRange_invalidFormat_returns400() throws Exception {
+    void getTasksByRange_shouldReturn400WhenDateFormatIsInvalid() throws Exception {
         mockMvc.perform(get(BASE_URL).param("from", "21-09-2026").param("to", "2026-09-27"))
                 .andExpect(status().isBadRequest());
     }
