@@ -1,6 +1,7 @@
 package edu.eci.dosw.todo.repository;
 
 import edu.eci.dosw.todo.entity.TaskEntity;
+import edu.eci.dosw.todo.entity.TaskStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -39,4 +40,8 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
     // BONUS (calendario semanal) solo con las tareas propias
     // -> SELECT * FROM tasks WHERE user_id = :ownerId AND due_date BETWEEN :from AND :to (ambos extremos incluidos)
     List<TaskEntity> findByOwnerIdAndDueDateBetween(Long ownerId, LocalDate from, LocalDate to);
+
+    // LAB 7 (HU-SEG-05): métrica agregada para el resumen administrativo (no expone tareas)
+    // -> SELECT COUNT(*) FROM tasks WHERE status = :status
+    long countByStatus(TaskStatus status);
 }

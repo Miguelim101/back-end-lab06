@@ -1,5 +1,6 @@
 package edu.eci.dosw.todo.repository;
 
+import edu.eci.dosw.todo.entity.Role;
 import edu.eci.dosw.todo.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -20,4 +21,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     // SELECT COUNT(*) > 0 FROM users WHERE email = :email
     boolean existsByEmail(String email);
+
+    // LAB 7 (HU-SEG-05): SELECT COUNT(*) FROM users WHERE role = :role
+    long countByRole(Role role);
 }

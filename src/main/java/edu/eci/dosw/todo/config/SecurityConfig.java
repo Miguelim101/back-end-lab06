@@ -17,7 +17,8 @@ import org.springframework.security.web.SecurityFilterChain;
  * ==========================================================================
  * == LAB 7: Reglas de Spring Security. API stateless: no hay sesión HTTP  ==
  * ==        ni formulario de login; solo registro y login son públicos.   ==
- * ==        El resto exige "Authorization: Bearer <JWT>" válido          ==
+ * ==        El resto exige "Authorization: Bearer <JWT>" válido y        ==
+ * ==        /admin/** además exige el rol ADMIN (401 vs 403)             ==
  * ==========================================================================
  */
 @Configuration
@@ -27,7 +28,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JwtAuthenticationConverter jwtAuthenticationConverter,
-                                                   JsonAuthenticationEntryPoint authenticationEntryPoint) throws Exception {
+                                                   JsonAuthenticationEntryPoint authenticationEntryPoint,
+                                                   JsonAccessDeniedHandler accessDeniedHandler) throws Exception {
         http
                 // Sin cookies de sesión no hay riesgo CSRF; la identidad viaja en el header Authorization
                 .csrf(AbstractHttpConfigurer::disable)
@@ -39,6 +41,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
                         // /error público para que un 400/404 no termine convertido en 401
                         .requestMatchers("/error").permitAll()
+                        // HU-SEG-05: recurso administrativo solo para el rol ADMIN (autoridad ROLE_ADMIN del JWT)
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // HU-SEG-04: el CRUD de tareas (incluido el calendario ?from&to) y todo lo demás exige JWT válido
                         .requestMatchers("/api/v1/tasks/**").authenticated()
                         .anyRequest().authenticated())
@@ -46,7 +50,9 @@ public class SecurityConfig {
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
                         .authenticationEntryPoint(authenticationEntryPoint))
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint));
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(authenticationEntryPoint)   // 401: sin token o token inválido
+                        .accessDeniedHandler(accessDeniedHandler));           // 403: token válido sin el rol requerido
 
         return http.build();
     }

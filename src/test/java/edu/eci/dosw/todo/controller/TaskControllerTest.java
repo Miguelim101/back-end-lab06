@@ -1,5 +1,6 @@
 package edu.eci.dosw.todo.controller;
 
+import edu.eci.dosw.todo.config.JsonAccessDeniedHandler;
 import edu.eci.dosw.todo.config.JsonAuthenticationEntryPoint;
 import edu.eci.dosw.todo.config.JwtConfig;
 import edu.eci.dosw.todo.config.SecurityConfig;
@@ -42,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TaskController.class)
-@Import({SecurityConfig.class, JwtConfig.class, JsonAuthenticationEntryPoint.class}) // Usa las reglas reales de Spring Security en el slice web
+@Import({SecurityConfig.class, JwtConfig.class, JsonAuthenticationEntryPoint.class, JsonAccessDeniedHandler.class}) // Usa las reglas reales de Spring Security en el slice web
 // HU-SEG-04: cada petición autenticada usa un JWT de prueba; las pruebas sin token esperan 401
 // HU-SEG-03: el JWT lleva sub = id del usuario, y el controlador se lo pasa al servicio
 class TaskControllerTest extends AbstractWebMvcSecurityTest {

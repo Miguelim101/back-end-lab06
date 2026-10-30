@@ -5,7 +5,7 @@ import org.springframework.test.context.DynamicPropertySource;
 
 /**
  * Base de las pruebas @WebMvcTest: aporta la llave JWT de prueba que necesita JwtConfig.
- * Cada subclase importa SecurityConfig, JwtConfig y JsonAuthenticationEntryPoint para
+ * Cada subclase importa SecurityConfig, JwtConfig, JsonAuthenticationEntryPoint y JsonAccessDeniedHandler para
  * ejecutar las reglas reales de Spring Security en el slice web.
  */
 public abstract class AbstractWebMvcSecurityTest {

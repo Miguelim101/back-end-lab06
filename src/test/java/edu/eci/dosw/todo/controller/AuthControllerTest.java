@@ -1,5 +1,6 @@
 package edu.eci.dosw.todo.controller;
 
+import edu.eci.dosw.todo.config.JsonAccessDeniedHandler;
 import edu.eci.dosw.todo.config.JsonAuthenticationEntryPoint;
 import edu.eci.dosw.todo.config.JwtConfig;
 import edu.eci.dosw.todo.config.SecurityConfig;
@@ -32,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
-@Import({SecurityConfig.class, JwtConfig.class, JsonAuthenticationEntryPoint.class})
+@Import({SecurityConfig.class, JwtConfig.class, JsonAuthenticationEntryPoint.class, JsonAccessDeniedHandler.class})
 class AuthControllerTest extends AbstractWebMvcSecurityTest {
 
     private static final String REGISTER_URL = "/api/v1/auth/register";

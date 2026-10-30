@@ -115,11 +115,11 @@ La planeación conserva la misma organización que se habría llevado a Jira (é
 #### Feature F3 · Autorización por roles
 
 **HU-SEG-05 · Recurso administrativo**
-- [ ] `GET /admin/summary`
-- [ ] Regla `hasRole('ADMIN')`
-- [ ] Respuesta 403 en JSON
-- [ ] Procedimiento de ADMIN local
-- [ ] Pruebas PT-14, PT-15
+- [x] `GET /admin/summary`
+- [x] Regla `hasRole('ADMIN')`
+- [x] Respuesta 403 en JSON
+- [x] Procedimiento de ADMIN local
+- [x] Pruebas PT-14, PT-15
 
 #### Feature F4 · Sesión en el frontend
 
@@ -150,9 +150,9 @@ La planeación conserva la misma organización que se habría llevado a Jira (é
 | RF-SEG-04 | Consultar perfil | Obtener los datos no sensibles del usuario autenticado. | ✅ HU-SEG-02 |
 | RF-SEG-05 | Proteger el CRUD | Requerir token válido en los recursos de tareas. | ✅ HU-SEG-04 |
 | RF-SEG-06 | Aislar tareas por usuario | Listar, consultar, crear, editar y eliminar solo tareas propias. | ✅ HU-SEG-03 |
-| RF-SEG-07 | Gestionar autorización por roles | Reservar un endpoint administrativo exclusivamente al rol `ADMIN`. | ⬜ |
+| RF-SEG-07 | Gestionar autorización por roles | Reservar un endpoint administrativo exclusivamente al rol `ADMIN`. | ✅ HU-SEG-05 |
 | RF-SEG-08 | Cerrar sesión en frontend | Limpiar el estado de autenticación y volver al inicio de sesión. | ⬜ |
-| RF-SEG-09 | Manejar errores de seguridad | Diferenciar errores de validación, autenticación, autorización y recursos inexistentes. | ⬜ |
+| RF-SEG-09 | Manejar errores de seguridad | Diferenciar errores de validación, autenticación, autorización y recursos inexistentes. | ✅ HU-SEG-01..05 (`400`/`401`/`403`/`404`/`409`) |
 | RF-SEG-10 | Validar seguridad mediante pruebas | Cubrir rutas públicas, protegidas, token inválido y acceso cruzado. | ⬜ |
 
 Las reglas funcionales y de seguridad (2.1) están en [requirements_part2.md](docs/lab7/requirements_part2.md#21-reglas-funcionales-y-de-seguridad).
@@ -165,7 +165,7 @@ Las reglas funcionales y de seguridad (2.1) están en [requirements_part2.md](do
 | HU-SEG-02 | **Como** usuario registrado, **quiero** iniciar sesión con correo y contraseña, **para** acceder a mis tareas. | Credenciales válidas: `200 OK` y JWT firmado con expiración. Contraseña incorrecta: `401 Unauthorized`, sin token. | ✅ |
 | HU-SEG-03 | **Como** usuario autenticado, **quiero** ver y modificar únicamente mis tareas, **para** mantener privada mi información. | `GET /tasks` devuelve solo las tareas propias. Operar sobre una tarea ajena: `404 Not Found` y la tarea queda sin cambios. | ✅ |
 | HU-SEG-04 | **Como** responsable del sistema, **quiero** que las APIs de tareas exijan un JWT válido, **para** impedir operaciones anónimas o falsificadas. | Sin `Authorization`: `401`. Token alterado o expirado: `401`. | ✅ |
-| HU-SEG-05 | **Como** administrador, **quiero** consultar un resumen general no sensible, **para** conocer la utilización del sistema. | Rol ADMIN: `200 OK` con métricas agregadas. Rol USER: `403 Forbidden`. | ⬜ |
+| HU-SEG-05 | **Como** administrador, **quiero** consultar un resumen general no sensible, **para** conocer la utilización del sistema. | Rol ADMIN: `200 OK` con métricas agregadas. Rol USER: `403 Forbidden`. | ✅ |
 | HU-SEG-06 | **Como** usuario autenticado, **quiero** acceder a mis tareas mientras dure la sesión y cerrarla al terminar, **para** controlar el uso de mi cuenta. | "Cerrar sesión" elimina el token del estado, oculta las tareas y muestra el inicio de sesión. | ⬜ |
 
 Los escenarios Gherkin completos están en [requirements_part2.md](docs/lab7/requirements_part2.md#3-historias-de-usuario).
@@ -317,7 +317,29 @@ Authorization: Bearer <JWT_FIRMADO>
 
 ### 7.3 Administrador
 
-_Se completa en las siguientes historias._
+Requieren un JWT válido **con rol `ADMIN`**.
+
+| Método | Endpoint | Respuestas | HU |
+|---|---|---|---|
+| `GET` | `/admin/summary` | `200` métricas agregadas · `401` sin token o token inválido · `403` token válido con rol `USER` | HU-SEG-05 |
+
+```json
+{"totalUsers": 4, "totalAdmins": 1, "totalTasks": 6,
+ "tasksByStatus": {"PENDING": 3, "IN_PROGRESS": 2, "COMPLETED": 1}}
+```
+
+El resumen solo contiene conteos: no incluye correos, nombres, títulos ni contenido de las tareas. El rol `ADMIN` **no** da acceso a las tareas de otros usuarios (siguen respondiendo `404`).
+
+### 7.4 Política de errores
+
+| Situación | Código | Origen |
+|---|---|---|
+| Datos inválidos en registro, login o tareas | `400 Bad Request` | `GlobalExceptionHandler` (validación) |
+| Registro con correo ya existente | `409 Conflict` | `GlobalExceptionHandler` |
+| Login inválido | `401 Unauthorized` | `GlobalExceptionHandler` |
+| Falta de token, token expirado, alterado o con firma inválida | `401 Unauthorized` | `JsonAuthenticationEntryPoint` |
+| JWT válido sin el rol requerido (`/admin/**`) | `403 Forbidden` | `JsonAccessDeniedHandler` |
+| Tarea inexistente o perteneciente a otro usuario | `404 Not Found` | `GlobalExceptionHandler` |
 
 ---
 
@@ -327,7 +349,9 @@ _Se completa en las siguientes historias._
 |---|---|---|
 | Contraseñas | Solo se guarda el hash **BCrypt** (sal aleatoria por contraseña, factor de costo 10) mediante el bean `PasswordEncoder`. La contraseña ni su hash se devuelven nunca: `UserResponse` solo expone `id`, `name`, `email` y `role`. Longitud entre 8 y 72 caracteres (BCrypt solo procesa 72 bytes). | `SecurityConfig`, `AuthServiceImpl`, `RegisterRequest` |
 | Correo único | Se normaliza (`trim` + minúsculas) antes de consultar y guardar. La BD lo refuerza con `UNIQUE` y un `CHECK (email = LOWER(email))`. Si dos registros simultáneos chocan con el `UNIQUE`, también responde `409`. | `AuthServiceImpl`, `002_create_users.sql` |
-| Roles | El registro público asigna **siempre** `USER`; un campo `role` enviado en el JSON se ignora. | `AuthServiceImpl` |
+| Roles | El registro público asigna **siempre** `USER`; un campo `role` enviado en el JSON se ignora. `ADMIN` solo se asigna desde la BD en desarrollo local (ver [9.4](#94-crear-un-administrador-solo-desarrollo-local)). `/api/v1/admin/**` se protege **por URL** con `hasRole('ADMIN')`. | `AuthServiceImpl`, `SecurityConfig` |
+| Rol en el JWT | El rol viaja en el claim `role` y se valida en cada petición. Si se cambia el rol en la BD, el token anterior conserva el rol viejo hasta vencer (máximo 30 min): el usuario debe iniciar sesión de nuevo para obtener el rol actualizado. | `TokenService`, `JwtConfig` |
+| Errores 403 | Un `AccessDeniedHandler` propio responde `403` en JSON (`{status, message}`) cuando el token es válido pero el rol no alcanza. Así se distingue de `401` (no autenticado) y de `404` (recurso ajeno o inexistente). | `JsonAccessDeniedHandler` |
 | Cadena de seguridad | `SecurityFilterChain` **stateless**, sin `httpBasic` ni `formLogin`, CSRF desactivado (no hay cookies de sesión; la identidad viaja en `Authorization`). Solo `POST /auth/register`, `POST /auth/login` y `/error` son públicos; el resto exige un JWT válido (OAuth2 Resource Server). | `SecurityConfig` |
 | Firma del JWT | **HS256** (HMAC-SHA256) con `NimbusJwtEncoder`/`NimbusJwtDecoder`, ambos construidos con la **misma** llave en `JwtConfig`. La firma se verifica en cada petición protegida; decodificar el Base64 no basta para que un token sea aceptado. | `JwtConfig` |
 | Contenido del JWT | `sub` (id del usuario), `iss` (`todo-api`), `iat`, `exp`, `role` y `name`. No incluye correo, contraseña ni hash. | `TokenService` |
@@ -406,6 +430,22 @@ npm run dev
 cd back-end-lab06 && ./mvnw clean verify   # Requiere Docker (Testcontainers levanta un PostgreSQL aislado)
 cd front-end-lab06 && npm test -- --run
 ```
+
+### 9.4 Crear un administrador (solo desarrollo local)
+
+La API pública **no permite** crear ni elevar cuentas a `ADMIN`. Para pruebas locales:
+
+1. Registrar la cuenta normalmente (queda con rol `USER`), desde React o con `POST /api/v1/auth/register`.
+2. Cambiar el rol directamente en el PostgreSQL local:
+
+   ```bash
+   docker exec -it todo-postgres psql -U todo_user -d todo_db \
+     -c "UPDATE users SET role = 'ADMIN' WHERE email = '<correo-de-la-cuenta>';"
+   ```
+
+3. **Volver a iniciar sesión** con esa cuenta: el nuevo JWT ya lleva `role: ADMIN`.
+
+No se publican contraseñas reales: cada quien usa la contraseña con la que registró su cuenta local.
 
 ---
 
@@ -550,6 +590,25 @@ Todas las capturas están en [`docs/evidence/`](docs/evidence).
 | Back-end (`./mvnw clean verify`) | ![tests back](docs/evidence/hu03_tests_backend.png) |
 | Front-end (`npm test -- --run`) | ![tests front](docs/evidence/hu03_tests_frontend.png) |
 
+### HU-SEG-05 · Recurso administrativo
+
+**Back-end.**
+- `controller/AdminController` expone `GET /api/v1/admin/summary`.
+- `service/AdminServiceImpl` arma el resumen **solo con conteos** (`count`, `countByRole`, `countByStatus`), nunca carga filas con datos privados.
+- `dto/AdminSummaryResponse` contiene `totalUsers`, `totalAdmins`, `totalTasks` y `tasksByStatus`.
+- `SecurityConfig` protege `/api/v1/admin/**` con `hasRole('ADMIN')`; la autoridad `ROLE_ADMIN` sale del claim `role` del JWT.
+- `config/JsonAccessDeniedHandler` responde `403` en JSON.
+- La cuenta `ADMIN` se crea solo en desarrollo local, como se describe en [9.4](#94-crear-un-administrador-solo-desarrollo-local).
+
+**Front-end.** Sin cambios: el recurso administrativo se consume por la API (el laboratorio no exige una vista de administración).
+
+| Evidencia | |
+|---|---|
+| Promoción a `ADMIN` en PostgreSQL (desarrollo local) | ![promover admin](docs/evidence/hu05_promover_admin.png) |
+| Usuario `USER` → `403` | ![403](docs/evidence/hu05_summary_user_403.png) |
+| Usuario `ADMIN` → `200` con métricas agregadas | ![200](docs/evidence/hu05_summary_admin_200.png) |
+| Pruebas back-end (`./mvnw clean verify`) | ![tests back](docs/evidence/hu05_tests_backend.png) |
+
 ---
 
 ## 11. Pruebas y cobertura
@@ -558,11 +617,11 @@ Todas las capturas están en [`docs/evidence/`](docs/evidence).
 
 | Tipo | Herramientas | Clases |
 |---|---|---|
-| Unitarias de servicio | JUnit 5 + Mockito + AssertJ | `TaskServiceTest`, `AuthServiceTest`, `UserServiceTest`, `TokenServiceTest` (encoder/decoder reales) |
-| Controlador (slice web con la cadena de seguridad real) | `@WebMvcTest` + MockMvc + `@Import(SecurityConfig, JwtConfig, ...)` | `TaskControllerTest`, `AuthControllerTest` |
+| Unitarias de servicio | JUnit 5 + Mockito + AssertJ | `TaskServiceTest`, `AuthServiceTest`, `UserServiceTest`, `AdminServiceTest`, `TokenServiceTest` (encoder/decoder reales) |
+| Controlador (slice web con la cadena de seguridad real) | `@WebMvcTest` + MockMvc + `@Import(SecurityConfig, JwtConfig, ...)` | `TaskControllerTest`, `AuthControllerTest`, `AdminControllerTest` |
 | Repositorio (consultas y restricciones contra PostgreSQL real) | `@DataJpaTest` + Testcontainers | `TaskRepositoryTest`, `UserRepositoryTest` |
 | Migraciones (BD del Lab 6 con tareas → 002 → 003) | JDBC + Testcontainers | `MigrationScriptsTest` |
-| Integración (aplicación completa + PostgreSQL 17 real en Docker con los scripts de `database/`) | `@SpringBootTest` + MockMvc + Testcontainers | `AuthIntegrationTest`, `SecurityIntegrationTest`, `TaskOwnershipIntegrationTest` |
+| Integración (aplicación completa + PostgreSQL 17 real en Docker con los scripts de `database/`) | `@SpringBootTest` + MockMvc + Testcontainers | `AuthIntegrationTest`, `SecurityIntegrationTest`, `TaskOwnershipIntegrationTest`, `AdminIntegrationTest` |
 | Front-end | Vitest + React Testing Library | `RegisterForm.test.jsx`, `LoginForm.test.jsx`, `App.test.jsx`, `authApi.test.js`, `taskApi.test.js` y las pruebas del Lab 6 |
 
 ### 11.2 Matriz de pruebas (PT)
@@ -582,8 +641,8 @@ Todas las capturas están en [`docs/evidence/`](docs/evidence).
 | PT-11 | Modificar tarea ajena | `404`, sin cambios en BD | `TaskOwnershipIntegrationTest.updateTask_shouldReturn404AndKeepTaskOfAnotherUserUnchanged`; `TaskServiceTest.update_shouldNotModifyTaskOfAnotherUser` | ✅ |
 | PT-12 | Eliminar tarea ajena | `404`, sin cambios en BD | `TaskOwnershipIntegrationTest.deleteTask_shouldReturn404AndKeepTaskOfAnotherUser`; `TaskServiceTest.delete_shouldNotDeleteTaskOfAnotherUser` | ✅ |
 | PT-13 | Crear tarea autenticada | Se asigna el propietario correcto | `TaskOwnershipIntegrationTest.createTask_shouldAssignAuthenticatedUserAsOwner`, `createTask_shouldIgnoreOwnerSentByClient`; `TaskServiceTest.create_shouldAssignAuthenticatedUserAsOwner`; `TaskControllerTest.createTask_shouldNotTrustOwnerSentInBody` | ✅ |
-| PT-14 | Usuario `USER` accede a `/admin/summary` | `403` | | ⬜ |
-| PT-15 | Usuario `ADMIN` accede a `/admin/summary` | `200` | | ⬜ |
+| PT-14 | Usuario `USER` accede a `/admin/summary` | `403` | `AdminIntegrationTest.summary_shouldReturn403ForUser`, `summary_shouldReturn403WithTokenIssuedBeforePromotion`; `AdminControllerTest.summary_shouldReturn403ForUser` | ✅ |
+| PT-15 | Usuario `ADMIN` accede a `/admin/summary` | `200` | `AdminIntegrationTest.summary_shouldReturn200ForAdmin`, `summary_shouldNotExposePrivateData`; `AdminControllerTest.summary_shouldReturn200ForAdmin`; `AdminServiceTest` | ✅ |
 | PT-16 | Cerrar sesión desde React | Token y tareas dejan de estar disponibles | | ⬜ |
 | PT-17 | Respuesta `401` desde una petición React | Redirige a inicio de sesión | | ⬜ |
 | PT-18 | Usuario distinto inicia sesión | Solo se muestran sus propias tareas | | ⬜ |
@@ -593,6 +652,7 @@ Pruebas adicionales:
 - HU-SEG-02: `GET /users/me` con token (`200`), sin token y con token inválido (`401` en JSON); token rechazado con otra llave; llave menor a 32 bytes rechazada; el JWT no incluye datos sensibles. En React: el login guarda el token en memoria, `taskApi` envía `Authorization: Bearer` y un login fallido no entra a las tareas.
 - HU-SEG-04: token de otro emisor, rol inexistente o ausente y `sub` no numérico (`401`); esquema `Basic` (`401`); token válido de un usuario eliminado en `/users/me` (`404`); *preflight* CORS con `Authorization`; `GET /tasks` con token válido (`200`).
 - HU-SEG-03: migración sobre datos del Lab 6 sin borrar tareas, `NOT NULL` y FK del propietario, usuario `legacy` sin credenciales válidas (`MigrationScriptsTest`); correo único y en minúsculas en BD (`UserRepositoryTest`); tarea sin propietario rechazada (`TaskRepositoryTest`); el dueño sigue pudiendo consultar, editar y eliminar su tarea; la respuesta no expone datos del propietario. Los 12 casos del Lab 6 en `TaskServiceTest` y los 13 de `TaskControllerTest` se conservaron adaptados al usuario autenticado.
+- HU-SEG-05: diferencia `401` (sin token) / `403` (rol insuficiente) / `404` (el ADMIN tampoco ve tareas ajenas); el resumen no expone correos ni títulos; un usuario promovido necesita un nuevo login porque el rol viaja en el JWT; el servicio solo usa conteos.
 
 ### 11.3 Resultados
 
@@ -602,6 +662,7 @@ Pruebas adicionales:
 | HU-SEG-02 | 66 pruebas, 0 fallos | 41 pruebas, 0 fallos | 95,2 % / 81,6 % |
 | HU-SEG-04 | 85 pruebas, 0 fallos | 41 pruebas, 0 fallos | 99,1 % / 94,7 % |
 | HU-SEG-03 | 118 pruebas, 0 fallos | 41 pruebas, 0 fallos | 99,1 % / 94,7 % |
+| HU-SEG-05 | 130 pruebas, 0 fallos | 41 pruebas, 0 fallos | 99,2 % / 95,0 % |
 
 \* JaCoCo excluye la clase de arranque, `dto/` y `entity/` (POJOs sin lógica). La regla de `mvn verify` exige como mínimo 70 %. La cobertura no reemplaza las pruebas de los escenarios de seguridad de la matriz.
 
@@ -615,7 +676,7 @@ Pruebas adicionales:
 - [x] El JWT está firmado, vence y se valida en el servidor.
 - [x] Los endpoints de tareas rechazan peticiones sin autenticación.
 - [x] Ningún usuario puede ver, modificar o eliminar tareas ajenas.
-- [ ] El rol `USER` no puede acceder al recurso exclusivo `ADMIN`.
+- [x] El rol `USER` no puede acceder al recurso exclusivo `ADMIN`.
 - [ ] React consume recursos protegidos y permite cerrar sesión.
 - [ ] Los tests nuevos y los del laboratorio anterior finalizan correctamente.
 - [ ] Los diagramas C4, de clases y de datos se encuentran actualizados.
