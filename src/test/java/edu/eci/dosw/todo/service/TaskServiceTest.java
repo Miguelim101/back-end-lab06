@@ -6,13 +6,17 @@ import edu.eci.dosw.todo.dto.TaskUpdateRequest;
 import edu.eci.dosw.todo.entity.TaskEntity;
 import edu.eci.dosw.todo.entity.TaskPriority;
 import edu.eci.dosw.todo.entity.TaskStatus;
+import edu.eci.dosw.todo.entity.UserEntity;
 import edu.eci.dosw.todo.exception.InvalidDateRangeException;
 import edu.eci.dosw.todo.exception.TaskNotFoundException;
+import edu.eci.dosw.todo.exception.UserNotFoundException;
 import edu.eci.dosw.todo.repository.TaskRepository;
+import edu.eci.dosw.todo.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -39,20 +43,34 @@ public class TaskServiceTest {
     @Mock
     private TaskRepository taskRepository; // 1. El repositorio es un Mock
 
+    @Mock
+    private UserRepository userRepository; // LAB 7: para resolver el propietario al crear
+
+    // LAB 7 (HU-SEG-03): Ana es el usuario autenticado; Luis es otro usuario
+    private static final Long ANA_ID = 1L;
+    private static final Long LUIS_ID = 2L;
+
     @InjectMocks
     private TaskServiceImpl taskServiceImpl;  // 2. Inyectar el mock en el servicio real
 
     private TaskResponse sampleTaskResponse;
     private TaskEntity sampleTask;
+    private UserEntity ana;
 
     @BeforeEach
     void SetUp(){
+        ana = new UserEntity();
+        ana.setId(ANA_ID);
+        ana.setName("Ana Pérez");
+        ana.setEmail("ana@example.com");
+
         sampleTask = new TaskEntity();
         sampleTask.setId(1L);
         sampleTask.setTitle("Tests del servicio");
         sampleTask.setDescription("Completar la parte 6 del laboratorio 6");
         sampleTask.setStatus(TaskStatus.PENDING);
         sampleTask.setPriority(TaskPriority.MEDIUM);
+        sampleTask.setOwner(ana);
         sampleTaskResponse = new TaskResponse(sampleTask);
     }
 
@@ -61,34 +79,35 @@ public class TaskServiceTest {
     @Test
     void findAll_shouldReturnTasks(){
         // GIVEN (preparation and repository and docker wile)
-        when(taskRepository.findAll()).thenReturn(List.of(sampleTask));
+        when(taskRepository.findAllByOwnerId(ANA_ID)).thenReturn(List.of(sampleTask));
 
         // WHEN (execution)
-        List<TaskResponse> result = taskServiceImpl.findAll();
+        List<TaskResponse> result = taskServiceImpl.findAll(ANA_ID);
 
         // THEN (results)
         assertThat(result).hasSize(1).contains(sampleTaskResponse);
-        verify(taskRepository, times(1)).findAll();
+        verify(taskRepository, times(1)).findAllByOwnerId(ANA_ID);
+        verify(taskRepository, never()).findAll(); // Nunca se consultan las tareas de todos
     }
 
     // --- PRUEBAS DE BUSCAR POR ID (findById) ---
 
     @Test
     void findById_shouldReturnTaskWhenExists(){
-        when(taskRepository.findById(1L)).thenReturn(Optional.of(sampleTask));
+        when(taskRepository.findByIdAndOwnerId(1L, ANA_ID)).thenReturn(Optional.of(sampleTask));
 
-        TaskResponse result = taskServiceImpl.findById(1L);
+        TaskResponse result = taskServiceImpl.findById(ANA_ID, 1L);
 
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(1L);
-        verify(taskRepository, times(1)).findById(1L);
+        verify(taskRepository, times(1)).findByIdAndOwnerId(1L, ANA_ID);
     }
 
     @Test
     void findById_shouldThrowExceptionWhenTaskDoesNotExist(){
-        when(taskRepository.findById(99L)).thenReturn(Optional.empty());
+        when(taskRepository.findByIdAndOwnerId(99L, ANA_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> taskServiceImpl.findById(99L))
+        assertThatThrownBy(() -> taskServiceImpl.findById(ANA_ID, 99L))
                 .isInstanceOf(TaskNotFoundException.class)
                 .hasMessageContaining("Task with id 99 was not found");
     }
@@ -115,10 +134,11 @@ public class TaskServiceTest {
         taskSaved.setCreatedAt(LocalDateTime.now()); // Simula la asignación de fecha de creación
 
         // 2. Mocking (Configurar el comportamiento ANTES de ejecutar la acción)
+        when(userRepository.findById(ANA_ID)).thenReturn(Optional.of(ana));
         when(taskRepository.save(any(TaskEntity.class))).thenReturn(taskSaved);
 
         // 3. Act (Ejecutar la acción)
-        TaskResponse result = taskServiceImpl.create(request);
+        TaskResponse result = taskServiceImpl.create(ANA_ID, request);
 
         // 4. Assert (Verificaciones)
         assertThat(result).isNotNull();
@@ -143,10 +163,11 @@ public class TaskServiceTest {
         taskSaved.setTitle(request.getTitle());
         taskSaved.setStatus(TaskStatus.PENDING); // Simula la asignación por defecto del servicio
 
+        when(userRepository.findById(ANA_ID)).thenReturn(Optional.of(ana));
         when(taskRepository.save(any(TaskEntity.class))).thenReturn(taskSaved);
 
         // Act
-        TaskResponse result = taskServiceImpl.create(request);
+        TaskResponse result = taskServiceImpl.create(ANA_ID, request);
 
         // Assert
         assertThat(result.getStatus()).isEqualTo(TaskStatus.PENDING);
@@ -179,19 +200,19 @@ public class TaskServiceTest {
         updatedTask.setPriority(request.getPriority());
         updatedTask.setDueDate(request.getDueDate());
 
-        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        when(taskRepository.findByIdAndOwnerId(1L, ANA_ID)).thenReturn(Optional.of(existingTask));
         when(taskRepository.save(any(TaskEntity.class))).thenReturn(updatedTask);
 
         // Act
-        TaskResponse result = taskServiceImpl.update(1L, request);
+        TaskResponse result = taskServiceImpl.update(ANA_ID, 1L, request);
 
         // Assert
         assertThat(result.getTitle()).isEqualTo("Título actualizado");
         assertThat(result.getDescription()).isEqualTo("Descripción actualizada");
         assertThat(result.getPriority()).isEqualTo(TaskPriority.HIGH);
 
-        // Verifica el flujo: primero busca, luego guarda
-        verify(taskRepository, times(1)).findById(1L);
+        // Verifica el flujo: primero busca (solo entre las tareas propias), luego guarda
+        verify(taskRepository, times(1)).findByIdAndOwnerId(1L, ANA_ID);
         verify(taskRepository, times(1)).save(any(TaskEntity.class));
     }
 
@@ -199,15 +220,15 @@ public class TaskServiceTest {
     void update_shouldThrowExceptionWhenTaskDoesNotExist(){
         // Arrange
         TaskUpdateRequest request = new TaskUpdateRequest();
-        when(taskRepository.findById(99L)).thenReturn(Optional.empty());
+        when(taskRepository.findByIdAndOwnerId(99L, ANA_ID)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThatThrownBy(() -> taskServiceImpl.update(99L, request))
+        assertThatThrownBy(() -> taskServiceImpl.update(ANA_ID, 99L, request))
                 .isInstanceOf(TaskNotFoundException.class)
                 .hasMessageContaining("Task with id 99 was not found");
 
         // Verifica que la ejecución se abortó y NUNCA se llamó al método save
-        verify(taskRepository, times(1)).findById(99L);
+        verify(taskRepository, times(1)).findByIdAndOwnerId(99L, ANA_ID);
         verify(taskRepository, never()).save(any(TaskEntity.class));
     }
 
@@ -216,28 +237,28 @@ public class TaskServiceTest {
     @Test
     void delete_shouldDeleteExistingTask(){
         // Arrange
-        when(taskRepository.existsById(1L)).thenReturn(true);
+        when(taskRepository.existsByIdAndOwnerId(1L, ANA_ID)).thenReturn(true);
 
         // Act
-        taskServiceImpl.delete(1L);
+        taskServiceImpl.delete(ANA_ID, 1L);
 
         // Assert
-        verify(taskRepository, times(1)).existsById(1L);
+        verify(taskRepository, times(1)).existsByIdAndOwnerId(1L, ANA_ID);
         verify(taskRepository, times(1)).deleteById(1L);
     }
 
     @Test
     void delete_shouldThrowExceptionWhenTaskDoesNotExist(){
         // Arrange
-        when(taskRepository.existsById(99L)).thenReturn(false);
+        when(taskRepository.existsByIdAndOwnerId(99L, ANA_ID)).thenReturn(false);
 
         // Act & Assert
-        assertThatThrownBy(() -> taskServiceImpl.delete(99L))
+        assertThatThrownBy(() -> taskServiceImpl.delete(ANA_ID, 99L))
                 .isInstanceOf(TaskNotFoundException.class)
                 .hasMessageContaining("Task with id 99 was not found");
 
         // Verifica que se consultó la existencia, pero NUNCA se intentó borrar
-        verify(taskRepository, times(1)).existsById(99L);
+        verify(taskRepository, times(1)).existsByIdAndOwnerId(99L, ANA_ID);
         verify(taskRepository, never()).deleteById(anyLong());
     }
 
@@ -249,16 +270,16 @@ public class TaskServiceTest {
         LocalDate from = LocalDate.of(2026, 9, 21);
         LocalDate to = LocalDate.of(2026, 9, 27);
         sampleTask.setDueDate(LocalDate.of(2026, 9, 23));
-        when(taskRepository.findByDueDateBetween(from, to)).thenReturn(List.of(sampleTask));
+        when(taskRepository.findByOwnerIdAndDueDateBetween(ANA_ID, from, to)).thenReturn(List.of(sampleTask));
 
         // Act
-        List<TaskResponse> result = taskServiceImpl.findByDueDateBetween(from, to);
+        List<TaskResponse> result = taskServiceImpl.findByDueDateBetween(ANA_ID, from, to);
 
         // Assert
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getId()).isEqualTo(1L);
         assertThat(result.get(0).getDueDate()).isEqualTo(LocalDate.of(2026, 9, 23));
-        verify(taskRepository, times(1)).findByDueDateBetween(from, to);
+        verify(taskRepository, times(1)).findByOwnerIdAndDueDateBetween(ANA_ID, from, to);
     }
 
     @Test
@@ -266,21 +287,91 @@ public class TaskServiceTest {
         LocalDate from = LocalDate.of(2026, 9, 27);
         LocalDate to = LocalDate.of(2026, 9, 21);
 
-        assertThatThrownBy(() -> taskServiceImpl.findByDueDateBetween(from, to))
+        assertThatThrownBy(() -> taskServiceImpl.findByDueDateBetween(ANA_ID, from, to))
                 .isInstanceOf(InvalidDateRangeException.class);
 
         // Un rango inválido nunca debe llegar a la base de datos
-        verify(taskRepository, never()).findByDueDateBetween(any(), any());
+        verify(taskRepository, never()).findByOwnerIdAndDueDateBetween(any(), any(), any());
     }
 
     @Test
     void findByDueDateBetween_shouldThrowExceptionWhenDateIsMissing(){
-        assertThatThrownBy(() -> taskServiceImpl.findByDueDateBetween(LocalDate.of(2026, 9, 21), null))
+        assertThatThrownBy(() -> taskServiceImpl.findByDueDateBetween(ANA_ID, LocalDate.of(2026, 9, 21), null))
                 .isInstanceOf(InvalidDateRangeException.class);
-        assertThatThrownBy(() -> taskServiceImpl.findByDueDateBetween(null, LocalDate.of(2026, 9, 27)))
+        assertThatThrownBy(() -> taskServiceImpl.findByDueDateBetween(ANA_ID, null, LocalDate.of(2026, 9, 27)))
                 .isInstanceOf(InvalidDateRangeException.class);
 
-        verify(taskRepository, never()).findByDueDateBetween(any(), any());
+        verify(taskRepository, never()).findByOwnerIdAndDueDateBetween(any(), any(), any());
     }
 
+    // --- LAB 7 · HU-SEG-03: AISLAMIENTO POR PROPIETARIO ---
+
+    @Test
+    void create_shouldAssignAuthenticatedUserAsOwner(){
+        TaskCreateRequest request = new TaskCreateRequest("Tarea de Ana", null, TaskPriority.LOW, null);
+        when(userRepository.findById(ANA_ID)).thenReturn(Optional.of(ana));
+        when(taskRepository.save(any(TaskEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        taskServiceImpl.create(ANA_ID, request);
+
+        ArgumentCaptor<TaskEntity> captor = ArgumentCaptor.forClass(TaskEntity.class);
+        verify(taskRepository).save(captor.capture());
+        assertThat(captor.getValue().getOwner()).isSameAs(ana);
+    }
+
+    @Test
+    void create_shouldNotSaveWhenUserDoesNotExist(){
+        TaskCreateRequest request = new TaskCreateRequest("Tarea", null, TaskPriority.LOW, null);
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> taskServiceImpl.create(99L, request))
+                .isInstanceOf(UserNotFoundException.class);
+
+        verify(taskRepository, never()).save(any(TaskEntity.class));
+    }
+
+    @Test
+    void findById_shouldNotReturnTaskOfAnotherUser(){
+        // La tarea 1 es de Ana: para Luis la consulta filtrada por propietario no la encuentra
+        when(taskRepository.findByIdAndOwnerId(1L, LUIS_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> taskServiceImpl.findById(LUIS_ID, 1L))
+                .isInstanceOf(TaskNotFoundException.class)
+                .hasMessageContaining("Task with id 1 was not found");
+
+        verify(taskRepository, never()).findById(any());
+    }
+
+    @Test
+    void update_shouldNotModifyTaskOfAnotherUser(){
+        TaskUpdateRequest request = new TaskUpdateRequest(
+                "Hackeada", null, TaskStatus.COMPLETED, TaskPriority.HIGH, null);
+        when(taskRepository.findByIdAndOwnerId(1L, LUIS_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> taskServiceImpl.update(LUIS_ID, 1L, request))
+                .isInstanceOf(TaskNotFoundException.class);
+
+        verify(taskRepository, never()).save(any(TaskEntity.class));
+    }
+
+    @Test
+    void delete_shouldNotDeleteTaskOfAnotherUser(){
+        when(taskRepository.existsByIdAndOwnerId(1L, LUIS_ID)).thenReturn(false);
+
+        assertThatThrownBy(() -> taskServiceImpl.delete(LUIS_ID, 1L))
+                .isInstanceOf(TaskNotFoundException.class);
+
+        verify(taskRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void findByDueDateBetween_shouldOnlyQueryTasksOfUser(){
+        LocalDate from = LocalDate.of(2026, 9, 21);
+        LocalDate to = LocalDate.of(2026, 9, 27);
+        when(taskRepository.findByOwnerIdAndDueDateBetween(LUIS_ID, from, to)).thenReturn(List.of());
+
+        assertThat(taskServiceImpl.findByDueDateBetween(LUIS_ID, from, to)).isEmpty();
+
+        verify(taskRepository).findByOwnerIdAndDueDateBetween(LUIS_ID, from, to);
+    }
 }

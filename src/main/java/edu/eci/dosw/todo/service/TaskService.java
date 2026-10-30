@@ -15,12 +15,14 @@ import java.util.List;
  * =================================================================================
  */
 public interface TaskService {
-    List<TaskResponse> findAll();
-    TaskResponse findById(Long id);
-    TaskResponse create(TaskCreateRequest request);
-    TaskResponse update(Long id, TaskUpdateRequest request);
-    void delete(Long id);
+    // LAB 7 (HU-SEG-03): userId es el usuario autenticado (claim sub del JWT); cada operación
+    // actúa SOLO sobre sus tareas. Una tarea ajena se trata como inexistente (TaskNotFoundException -> 404)
+    List<TaskResponse> findAll(Long userId);
+    TaskResponse findById(Long userId, Long id);
+    TaskResponse create(Long userId, TaskCreateRequest request);
+    TaskResponse update(Long userId, Long id, TaskUpdateRequest request);
+    void delete(Long userId, Long id);
 
-    // BONUS (calendario semanal): tareas cuya fecha límite está entre from y to (incluidos)
-    List<TaskResponse> findByDueDateBetween(LocalDate from, LocalDate to);
+    // BONUS (calendario semanal): tareas propias cuya fecha límite está entre from y to (incluidos)
+    List<TaskResponse> findByDueDateBetween(Long userId, LocalDate from, LocalDate to);
 }

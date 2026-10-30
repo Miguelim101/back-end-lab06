@@ -20,6 +20,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
@@ -42,10 +43,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(TaskController.class)
 @Import({SecurityConfig.class, JwtConfig.class, JsonAuthenticationEntryPoint.class}) // Usa las reglas reales de Spring Security en el slice web
-// HU-SEG-04: cada petición autenticada usa jwt() (usuario con JWT válido); las pruebas sin token esperan 401
+// HU-SEG-04: cada petición autenticada usa un JWT de prueba; las pruebas sin token esperan 401
+// HU-SEG-03: el JWT lleva sub = id del usuario, y el controlador se lo pasa al servicio
 class TaskControllerTest extends AbstractWebMvcSecurityTest {
 
     private static final String BASE_URL = "/api/v1/tasks";
+    private static final Long USER_ID = 1L;
 
     @Autowired
     private MockMvc mockMvc;  // Se encarga de simular las peticiones HTTP
@@ -59,6 +62,11 @@ class TaskControllerTest extends AbstractWebMvcSecurityTest {
     private TaskResponse sampleResponse;
 
     // ---------- Helper ----------
+
+    // Usuario autenticado con un JWT cuyo sub es su id (como lo emite TokenService)
+    private static JwtRequestPostProcessor asUser(Long userId) {
+        return jwt().jwt(token -> token.subject(String.valueOf(userId)).claim("role", "USER"));
+    }
 
     private TaskResponse buildResponse(long id, String title, String description) {
         TaskEntity entity = new TaskEntity();
@@ -77,10 +85,10 @@ class TaskControllerTest extends AbstractWebMvcSecurityTest {
     @Test
     @DisplayName("GET /tasks → 200")
     void getAllTasks_shouldReturn200() throws Exception {
-        when(taskService.findAll())
+        when(taskService.findAll(USER_ID))
                 .thenReturn(List.of(buildResponse(1L, "Estudiar", "Repasar Spring")));
 
-        mockMvc.perform(get(BASE_URL).with(jwt()))
+        mockMvc.perform(get(BASE_URL).with(asUser(USER_ID)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(1))
@@ -93,10 +101,10 @@ class TaskControllerTest extends AbstractWebMvcSecurityTest {
     @Test
     @DisplayName("GET /tasks/{id} existente → 200")
     void getTaskById_shouldReturn200WhenTaskExists() throws Exception {
-        when(taskService.findById(1L))
+        when(taskService.findById(USER_ID, 1L))
                 .thenReturn(buildResponse(1L, "Estudiar", "Repasar Spring"));
 
-        mockMvc.perform(get(BASE_URL + "/{id}", 1L).with(jwt()))
+        mockMvc.perform(get(BASE_URL + "/{id}", 1L).with(asUser(USER_ID)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.title").value("Estudiar"));
@@ -105,9 +113,9 @@ class TaskControllerTest extends AbstractWebMvcSecurityTest {
     @Test
     @DisplayName("GET /tasks/{id} inexistente → 404")
     void getTaskById_shouldReturn404WhenTaskDoesNotExist() throws Exception {
-        when(taskService.findById(99L)).thenThrow(new TaskNotFoundException(99L));
+        when(taskService.findById(USER_ID, 99L)).thenThrow(new TaskNotFoundException(99L));
 
-        mockMvc.perform(get(BASE_URL + "/{id}", 99L).with(jwt()))
+        mockMvc.perform(get(BASE_URL + "/{id}", 99L).with(asUser(USER_ID)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
     }
@@ -119,10 +127,10 @@ class TaskControllerTest extends AbstractWebMvcSecurityTest {
     void createTask_shouldReturn201WhenRequestIsValid() throws Exception {
         TaskCreateRequest request = new TaskCreateRequest(
                 "Estudiar", "BASE_URRepasar Spring", TaskPriority.MEDIUM, LocalDate.now().plusDays(7));
-        when(taskService.create(any(TaskCreateRequest.class)))
+        when(taskService.create(eq(USER_ID), any(TaskCreateRequest.class)))
                 .thenReturn(buildResponse(1L, "Estudiar", "Repasar Spring"));
 
-        mockMvc.perform(post(BASE_URL).with(jwt())
+        mockMvc.perform(post(BASE_URL).with(asUser(USER_ID))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -136,7 +144,7 @@ class TaskControllerTest extends AbstractWebMvcSecurityTest {
         TaskCreateRequest invalid = new TaskCreateRequest(
                 "", "Sin título", TaskPriority.MEDIUM, LocalDate.now().plusDays(7));
 
-        mockMvc.perform(post(BASE_URL).with(jwt())
+        mockMvc.perform(post(BASE_URL).with(asUser(USER_ID))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalid)))
                 .andExpect(status().isBadRequest());
@@ -150,10 +158,10 @@ class TaskControllerTest extends AbstractWebMvcSecurityTest {
         TaskUpdateRequest request = new TaskUpdateRequest(
                 "Estudiar más", "Repasar JPA", TaskStatus.PENDING, TaskPriority.MEDIUM,
                 LocalDate.now().plusDays(10));
-        when(taskService.update(eq(1L), any(TaskUpdateRequest.class)))
+        when(taskService.update(eq(USER_ID), eq(1L), any(TaskUpdateRequest.class)))
                 .thenReturn(buildResponse(1L, "Estudiar más", "Repasar JPA"));
 
-        mockMvc.perform(put(BASE_URL + "/{id}", 1L).with(jwt())
+        mockMvc.perform(put(BASE_URL + "/{id}", 1L).with(asUser(USER_ID))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -166,10 +174,10 @@ class TaskControllerTest extends AbstractWebMvcSecurityTest {
         TaskUpdateRequest request = new TaskUpdateRequest(
                 "Estudiar más", "Repasar JPA", TaskStatus.PENDING, TaskPriority.MEDIUM,
                 LocalDate.now().plusDays(10));
-        when(taskService.update(eq(99L), any(TaskUpdateRequest.class)))
+        when(taskService.update(eq(USER_ID), eq(99L), any(TaskUpdateRequest.class)))
                 .thenThrow(new TaskNotFoundException(99L));
 
-        mockMvc.perform(put(BASE_URL + "/{id}", 99L).with(jwt())
+        mockMvc.perform(put(BASE_URL + "/{id}", 99L).with(asUser(USER_ID))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
@@ -180,12 +188,12 @@ class TaskControllerTest extends AbstractWebMvcSecurityTest {
     @Test
     @DisplayName("DELETE /tasks/{id} existente → 204")
     void deleteTask_shouldReturn204WhenTaskExists() throws Exception {
-        doNothing().when(taskService).delete(1L);
+        doNothing().when(taskService).delete(USER_ID, 1L);
 
-        mockMvc.perform(delete(BASE_URL + "/{id}", 1L).with(jwt()))
+        mockMvc.perform(delete(BASE_URL + "/{id}", 1L).with(asUser(USER_ID)))
                 .andExpect(status().isNoContent());
 
-        verify(taskService).delete(1L);
+        verify(taskService).delete(USER_ID, 1L);
     }
 
     // ---------- GET /tasks?from=&to= (BONUS calendario) ----------
@@ -195,24 +203,24 @@ class TaskControllerTest extends AbstractWebMvcSecurityTest {
     void getTasksByRange_shouldReturn200WhenRangeIsValid() throws Exception {
         LocalDate from = LocalDate.of(2026, 9, 21);
         LocalDate to = LocalDate.of(2026, 9, 27);
-        when(taskService.findByDueDateBetween(from, to))
+        when(taskService.findByDueDateBetween(USER_ID, from, to))
                 .thenReturn(List.of(buildResponse(1L, "Lab DOSW", "Entrega del bono")));
 
-        mockMvc.perform(get(BASE_URL).with(jwt()).param("from", "2026-09-21").param("to", "2026-09-27"))
+        mockMvc.perform(get(BASE_URL).with(asUser(USER_ID)).param("from", "2026-09-21").param("to", "2026-09-27"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].title").value("Lab DOSW"));
 
-        verify(taskService).findByDueDateBetween(from, to);
+        verify(taskService).findByDueDateBetween(USER_ID, from, to);
     }
 
     @Test
     @DisplayName("GET /tasks?from&to rango invertido → 400")
     void getTasksByRange_shouldReturn400WhenFromIsAfterTo() throws Exception {
-        when(taskService.findByDueDateBetween(any(), any()))
+        when(taskService.findByDueDateBetween(eq(USER_ID), any(), any()))
                 .thenThrow(new InvalidDateRangeException("'from' date must be before or equal to 'to' date"));
 
-        mockMvc.perform(get(BASE_URL).with(jwt()).param("from", "2026-09-27").param("to", "2026-09-21"))
+        mockMvc.perform(get(BASE_URL).with(asUser(USER_ID)).param("from", "2026-09-27").param("to", "2026-09-21"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
     }
@@ -220,27 +228,27 @@ class TaskControllerTest extends AbstractWebMvcSecurityTest {
     @Test
     @DisplayName("GET /tasks?from (sin to) → 400")
     void getTasksByRange_shouldReturn400WhenToIsMissing() throws Exception {
-        when(taskService.findByDueDateBetween(any(), isNull()))
+        when(taskService.findByDueDateBetween(eq(USER_ID), any(), isNull()))
                 .thenThrow(new InvalidDateRangeException("Both 'from' and 'to' dates are required"));
 
-        mockMvc.perform(get(BASE_URL).with(jwt()).param("from", "2026-09-21"))
+        mockMvc.perform(get(BASE_URL).with(asUser(USER_ID)).param("from", "2026-09-21"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("GET /tasks?to (sin from) → 400")
     void getTasksByRange_shouldReturn400WhenFromIsMissing() throws Exception {
-        when(taskService.findByDueDateBetween(isNull(), any()))
+        when(taskService.findByDueDateBetween(eq(USER_ID), isNull(), any()))
                 .thenThrow(new InvalidDateRangeException("Both 'from' and 'to' dates are required"));
 
-        mockMvc.perform(get(BASE_URL).with(jwt()).param("to", "2026-09-27"))
+        mockMvc.perform(get(BASE_URL).with(asUser(USER_ID)).param("to", "2026-09-27"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("GET /tasks?from&to con formato inválido → 400")
     void getTasksByRange_shouldReturn400WhenDateFormatIsInvalid() throws Exception {
-        mockMvc.perform(get(BASE_URL).with(jwt()).param("from", "21-09-2026").param("to", "2026-09-27"))
+        mockMvc.perform(get(BASE_URL).with(asUser(USER_ID)).param("from", "21-09-2026").param("to", "2026-09-27"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -267,7 +275,7 @@ class TaskControllerTest extends AbstractWebMvcSecurityTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
 
-        verify(taskService, never()).create(any());
+        verify(taskService, never()).create(any(), any());
     }
 
     @Test
@@ -290,7 +298,7 @@ class TaskControllerTest extends AbstractWebMvcSecurityTest {
         mockMvc.perform(delete(BASE_URL + "/{id}", 1L))
                 .andExpect(status().isUnauthorized());
 
-        verify(taskService, never()).delete(any());
+        verify(taskService, never()).delete(any(), any());
     }
 
     @Test
@@ -300,5 +308,47 @@ class TaskControllerTest extends AbstractWebMvcSecurityTest {
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(taskService);
+    }
+
+    // ---------- HU-SEG-03 · El usuario sale del token ----------
+
+    @Test
+    @DisplayName("GET /tasks consulta solo las tareas del usuario del token")
+    void getAllTasks_shouldQueryOnlyTasksOfTokenUser() throws Exception {
+        when(taskService.findAll(7L)).thenReturn(List.of());
+
+        mockMvc.perform(get(BASE_URL).with(asUser(7L)))
+                .andExpect(status().isOk());
+
+        verify(taskService).findAll(7L);
+    }
+
+    @Test
+    @DisplayName("POST /tasks usa el usuario del token aunque el body envíe otro propietario")
+    void createTask_shouldNotTrustOwnerSentInBody() throws Exception {
+        String body = """
+                {"title": "Estudiar", "priority": "HIGH", "userId": 99, "owner": {"id": 99}}
+                """;
+        when(taskService.create(eq(7L), any(TaskCreateRequest.class)))
+                .thenReturn(buildResponse(1L, "Estudiar", null));
+
+        mockMvc.perform(post(BASE_URL).with(asUser(7L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated());
+
+        verify(taskService).create(eq(7L), any(TaskCreateRequest.class));
+        verify(taskService, never()).create(eq(99L), any(TaskCreateRequest.class));
+    }
+
+    @Test
+    @DisplayName("GET /tasks/{id} de otro usuario → 404 (igual que una tarea inexistente)")
+    void getTaskById_shouldReturn404WhenTaskBelongsToAnotherUser() throws Exception {
+        when(taskService.findById(7L, 5L)).thenThrow(new TaskNotFoundException(5L));
+
+        mockMvc.perform(get(BASE_URL + "/{id}", 5L).with(asUser(7L)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.title").doesNotExist());
     }
 }

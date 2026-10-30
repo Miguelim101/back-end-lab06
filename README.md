@@ -105,12 +105,12 @@ La planeación conserva la misma organización que se habría llevado a Jira (é
 - [x] Pruebas PT-06, PT-08, PT-09
 
 **HU-SEG-03 · Acceso a las tareas propias**
-- [ ] Script `003_add_task_owner.sql` (migración de tareas previas)
-- [ ] Relación `TaskEntity` → `UserEntity`
-- [ ] Consultas por propietario en Repository/Service
-- [ ] Usuario tomado del JWT en el Controller
-- [ ] Calendario filtrado por propietario
-- [ ] Pruebas de repositorio e integración PT-07, PT-10..PT-13, PT-18
+- [x] Script `003_add_task_owner.sql` (migración de tareas previas)
+- [x] Relación `TaskEntity` → `UserEntity`
+- [x] Consultas por propietario en Repository/Service
+- [x] Usuario tomado del JWT en el Controller
+- [x] Calendario filtrado por propietario
+- [x] Pruebas de repositorio, migración e integración PT-07, PT-10..PT-13
 
 #### Feature F3 · Autorización por roles
 
@@ -127,7 +127,7 @@ La planeación conserva la misma organización que se habría llevado a Jira (é
 - [ ] Barra con usuario y "Cerrar sesión"
 - [ ] Limpieza de estado al cerrar sesión
 - [ ] Redirección al login ante 401
-- [ ] Pruebas PT-16, PT-17
+- [ ] Pruebas PT-16, PT-17, PT-18
 
 #### Feature F5 · Diseño y documentación
 - [ ] Diagramas C4 (contexto, contenedores, componentes)
@@ -149,7 +149,7 @@ La planeación conserva la misma organización que se habría llevado a Jira (é
 | RF-SEG-03 | Mantener sesión en React | Utilizar el token en las peticiones a los recursos protegidos. | ✅ HU-SEG-02 |
 | RF-SEG-04 | Consultar perfil | Obtener los datos no sensibles del usuario autenticado. | ✅ HU-SEG-02 |
 | RF-SEG-05 | Proteger el CRUD | Requerir token válido en los recursos de tareas. | ✅ HU-SEG-04 |
-| RF-SEG-06 | Aislar tareas por usuario | Listar, consultar, crear, editar y eliminar solo tareas propias. | ⬜ |
+| RF-SEG-06 | Aislar tareas por usuario | Listar, consultar, crear, editar y eliminar solo tareas propias. | ✅ HU-SEG-03 |
 | RF-SEG-07 | Gestionar autorización por roles | Reservar un endpoint administrativo exclusivamente al rol `ADMIN`. | ⬜ |
 | RF-SEG-08 | Cerrar sesión en frontend | Limpiar el estado de autenticación y volver al inicio de sesión. | ⬜ |
 | RF-SEG-09 | Manejar errores de seguridad | Diferenciar errores de validación, autenticación, autorización y recursos inexistentes. | ⬜ |
@@ -163,7 +163,7 @@ Las reglas funcionales y de seguridad (2.1) están en [requirements_part2.md](do
 |---|---|---|---|
 | HU-SEG-01 | **Como** visitante, **quiero** crear una cuenta con mis datos y una contraseña, **para** usar la aplicación de manera personal. | Registro exitoso con rol USER, contraseña con hash y respuesta sin contraseña ni hash. Correo duplicado: `409 Conflict` sin crear un segundo usuario. | ✅ |
 | HU-SEG-02 | **Como** usuario registrado, **quiero** iniciar sesión con correo y contraseña, **para** acceder a mis tareas. | Credenciales válidas: `200 OK` y JWT firmado con expiración. Contraseña incorrecta: `401 Unauthorized`, sin token. | ✅ |
-| HU-SEG-03 | **Como** usuario autenticado, **quiero** ver y modificar únicamente mis tareas, **para** mantener privada mi información. | `GET /tasks` devuelve solo las tareas propias. Operar sobre una tarea ajena: `404 Not Found` y la tarea queda sin cambios. | ⬜ |
+| HU-SEG-03 | **Como** usuario autenticado, **quiero** ver y modificar únicamente mis tareas, **para** mantener privada mi información. | `GET /tasks` devuelve solo las tareas propias. Operar sobre una tarea ajena: `404 Not Found` y la tarea queda sin cambios. | ✅ |
 | HU-SEG-04 | **Como** responsable del sistema, **quiero** que las APIs de tareas exijan un JWT válido, **para** impedir operaciones anónimas o falsificadas. | Sin `Authorization`: `401`. Token alterado o expirado: `401`. | ✅ |
 | HU-SEG-05 | **Como** administrador, **quiero** consultar un resumen general no sensible, **para** conocer la utilización del sistema. | Rol ADMIN: `200 OK` con métricas agregadas. Rol USER: `403 Forbidden`. | ⬜ |
 | HU-SEG-06 | **Como** usuario autenticado, **quiero** acceder a mis tareas mientras dure la sesión y cerrarla al terminar, **para** controlar el uso de mi cuenta. | "Cerrar sesión" elimina el token del estado, oculta las tareas y muestra el inicio de sesión. | ⬜ |
@@ -217,6 +217,18 @@ Migraciones en [`database/`](database):
 | `001_create_schema.sql` | Tabla `tasks` (Lab 6) |
 | `002_create_users.sql` | Tabla `users` (HU-SEG-01) |
 | `003_add_task_owner.sql` | `tasks.user_id` + migración de tareas previas (HU-SEG-03) |
+
+**Estrategia para las tareas anteriores (003).** No se borra ninguna tarea. Dentro de una transacción:
+1. Se crea el usuario de prueba `legacy@todo.local` (rol `USER`). Su `password_hash` no es un hash BCrypt, así que **nadie puede iniciar sesión** con él.
+2. Se agrega `tasks.user_id` como opcional y se asignan a ese usuario todas las tareas existentes.
+3. Cuando ya no quedan valores nulos, se aplica `NOT NULL`, la llave foránea `fk_tasks_user` (`ON DELETE CASCADE`) y el índice `idx_tasks_user_id`.
+
+Si se quiere que un usuario real recupere esas tareas, basta con reasignarlas desde PostgreSQL (solo en desarrollo local):
+
+```sql
+UPDATE tasks SET user_id = (SELECT id FROM users WHERE email = 'ana@example.com')
+WHERE user_id = (SELECT id FROM users WHERE email = 'legacy@todo.local');
+```
 
 ---
 
@@ -289,12 +301,12 @@ Requieren la cabecera `Authorization: Bearer <JWT>`. Sin token, o con un token i
 | Método | Endpoint | Respuestas | HU |
 |---|---|---|---|
 | `GET` | `/users/me` | `200` `{id, name, email, role}` del usuario del token · `401` | HU-SEG-02 |
-| `GET` | `/tasks` | `200` lista de tareas · `401` | HU-SEG-04 |
-| `GET` | `/tasks?from=yyyy-MM-dd&to=yyyy-MM-dd` | `200` tareas del rango (calendario) · `400` rango inválido · `401` | HU-SEG-04 |
-| `GET` | `/tasks/{id}` | `200` · `404` · `401` | HU-SEG-04 |
-| `POST` | `/tasks` | `201` · `400` · `401` | HU-SEG-04 |
-| `PUT` | `/tasks/{id}` | `200` · `400` · `404` · `401` | HU-SEG-04 |
-| `DELETE` | `/tasks/{id}` | `204` · `404` · `401` | HU-SEG-04 |
+| `GET` | `/tasks` | `200` **solo mis tareas** · `401` | HU-SEG-04, HU-SEG-03 |
+| `GET` | `/tasks?from=yyyy-MM-dd&to=yyyy-MM-dd` | `200` mis tareas del rango (calendario) · `400` rango inválido · `401` | HU-SEG-04, HU-SEG-03 |
+| `GET` | `/tasks/{id}` | `200` mi tarea · `404` si no existe **o es ajena** · `401` | HU-SEG-04, HU-SEG-03 |
+| `POST` | `/tasks` | `201` tarea asociada a mi usuario · `400` · `401` | HU-SEG-04, HU-SEG-03 |
+| `PUT` | `/tasks/{id}` | `200` · `400` · `404` si no existe o es ajena · `401` | HU-SEG-04, HU-SEG-03 |
+| `DELETE` | `/tasks/{id}` | `204` · `404` si no existe o es ajena · `401` | HU-SEG-04, HU-SEG-03 |
 
 Ejemplo de petición protegida:
 
@@ -324,6 +336,8 @@ _Se completa en las siguientes historias._
 | Llave de firma | Variable de entorno `JWT_SECRET` (Base64, mínimo 32 bytes), **sin valor por defecto**: si falta, la aplicación no arranca. Se lee desde el entorno o desde `.env` (excluido de Git). Las pruebas generan una llave aleatoria en cada ejecución. | `application.yaml`, `JwtConfig`, `JwtTestSupport` |
 | Login | Mismo `401` y mismo mensaje (`Invalid email or password`) si el correo no existe o la contraseña es incorrecta. Si el correo no existe se compara contra un hash de relleno para que el tiempo de respuesta no revele qué cuentas existen. | `AuthServiceImpl` |
 | Protección del CRUD | `/api/v1/tasks/**` (incluido el calendario `?from&to`) exige un JWT válido. Un token sin `Authorization`, con otro esquema (`Basic`), alterado, firmado con otra llave, expirado, de otro emisor o con `sub`/`role` incoherentes se rechaza con `401` **antes** de llegar al controlador. | `SecurityConfig`, `JwtConfig` |
+| Propiedad de las tareas | El propietario se toma **siempre** del `sub` del JWT validado (`@AuthenticationPrincipal Jwt`), nunca del body ni de la URL; un `userId`/`owner` enviado por el cliente se ignora. Todas las consultas del repositorio filtran por `owner.id` (`findAllByOwnerId`, `findByIdAndOwnerId`, `existsByIdAndOwnerId`, `findByOwnerIdAndDueDateBetween`). | `TaskController`, `TaskServiceImpl`, `TaskRepository` |
+| Tareas ajenas | Una tarea de otro usuario se trata igual que una inexistente: `404 Not Found`, sin datos en la respuesta y sin cambios en la BD. Así no se revela que existe. | `TaskServiceImpl` |
 | Errores 401 | Un *entry point* propio responde en JSON con el mismo formato `{status, message}` y conserva `WWW-Authenticate: Bearer`. El mensaje es genérico y el token nunca se registra. | `JsonAuthenticationEntryPoint` |
 | Almacenamiento en el front | El JWT vive **solo en memoria** (`api/session.js`), nunca en `localStorage` ni en cookies. Al recargar la página se pierde la sesión y hay que volver a iniciar sesión (decisión del laboratorio). | `session.js`, `AuthContext.jsx` |
 | Logs | Se desactiva el usuario en memoria que Spring Boot crea por defecto, porque imprime una contraseña generada en los logs. `show-sql` solo muestra `?` en los parámetros, nunca hashes ni contraseñas. | `application.yaml` |
@@ -357,6 +371,9 @@ Copiar [`.env.example`](.env.example) como `.env` en la raíz de `back-end-lab06
 # Desde back-end-lab06/
 docker cp database/002_create_users.sql todo-postgres:/002_create_users.sql
 docker exec -i todo-postgres psql -U todo_user -d todo_db -f /002_create_users.sql
+
+docker cp database/003_add_task_owner.sql todo-postgres:/003_add_task_owner.sql
+docker exec -i todo-postgres psql -U todo_user -d todo_db -f /003_add_task_owner.sql
 ```
 
 **2. Variables de entorno.** Crear el `.env` a partir del ejemplo y generar la llave del JWT (una sola vez):
@@ -492,6 +509,47 @@ Todas las capturas están en [`docs/evidence/`](docs/evidence).
 | CRUD funcionando en React con el token | ![CRUD con token](docs/evidence/hu04_crud_con_token.png) |
 | Pruebas back-end (PT-06, PT-08 y PT-09; el token expirado se comprueba con la prueba porque manualmente habría que esperar 30 minutos) | ![tests back](docs/evidence/hu04_tests_backend.png) |
 
+### HU-SEG-03 · Acceso a las tareas propias
+
+**Base de datos.** [`database/003_add_task_owner.sql`](database/003_add_task_owner.sql) agrega `tasks.user_id` (`NOT NULL`, FK a `users.id`, índice) y asigna las tareas existentes al usuario de prueba `legacy@todo.local` (ver [estrategia](#55-modelo-entidad-relación)).
+
+| Evidencia | |
+|---|---|
+| Migración aplicada en `todo-postgres` | ![migración 003](docs/evidence/hu03_migracion_003.png) |
+| Estructura de `tasks` con `user_id NOT NULL` y la FK | ![\d tasks](docs/evidence/hu03_tabla_tasks.png) |
+| Tareas previas asignadas a `legacy@todo.local` | ![tareas legacy](docs/evidence/hu03_tareas_legacy.png) |
+
+**Back-end.**
+- `TaskEntity` tiene la relación `@ManyToOne owner` (`user_id`).
+- `TaskRepository` reemplazó las consultas globales por consultas filtradas por propietario.
+- `TaskService` recibe el `userId` en todas sus operaciones. Una tarea ajena lanza `TaskNotFoundException` (`404`) y nunca llega a `save` ni a `deleteById`.
+- `TaskController` obtiene el `userId` del `sub` del JWT (`@AuthenticationPrincipal Jwt`); el calendario `?from&to` también queda filtrado por propietario.
+
+| Evidencia | |
+|---|---|
+| Ana ve solo sus tareas | ![Ana](docs/evidence/hu03_ana_react.png) |
+| Luis ve solo sus tareas | ![Luis](docs/evidence/hu03_luis_react.png) |
+| Luis consulta la tarea de Ana → `404` | ![GET ajena](docs/evidence/hu03_get_ajena_404.png) |
+| Luis modifica la tarea de Ana → `404` | ![PUT ajena](docs/evidence/hu03_put_ajena_404.png) |
+| Luis elimina la tarea de Ana → `404` | ![DELETE ajena](docs/evidence/hu03_delete_ajena_404.png) |
+| En PostgreSQL cada tarea tiene su propietario | ![propietarios](docs/evidence/hu03_bd_propietarios.png) |
+
+**Front-end.**
+- `App.jsx` monta `TasksPage` con `key={user.id}`: si cambia el usuario, la página se crea de nuevo sin el estado del anterior.
+- La sección pasó a llamarse **MIS TAREAS** (mockup del laboratorio).
+- El calendario usa la misma API, así que solo muestra las tareas propias.
+
+| Evidencia | |
+|---|---|
+| Calendario con las tareas propias | ![calendario](docs/evidence/hu03_calendario_propio.png) |
+
+**Pruebas.**
+
+| Evidencia | |
+|---|---|
+| Back-end (`./mvnw clean verify`) | ![tests back](docs/evidence/hu03_tests_backend.png) |
+| Front-end (`npm test -- --run`) | ![tests front](docs/evidence/hu03_tests_frontend.png) |
+
 ---
 
 ## 11. Pruebas y cobertura
@@ -502,7 +560,9 @@ Todas las capturas están en [`docs/evidence/`](docs/evidence).
 |---|---|---|
 | Unitarias de servicio | JUnit 5 + Mockito + AssertJ | `TaskServiceTest`, `AuthServiceTest`, `UserServiceTest`, `TokenServiceTest` (encoder/decoder reales) |
 | Controlador (slice web con la cadena de seguridad real) | `@WebMvcTest` + MockMvc + `@Import(SecurityConfig, JwtConfig, ...)` | `TaskControllerTest`, `AuthControllerTest` |
-| Integración (aplicación completa + PostgreSQL 17 real en Docker con los scripts de `database/`) | `@SpringBootTest` + MockMvc + Testcontainers | `AuthIntegrationTest`, `SecurityIntegrationTest` |
+| Repositorio (consultas y restricciones contra PostgreSQL real) | `@DataJpaTest` + Testcontainers | `TaskRepositoryTest`, `UserRepositoryTest` |
+| Migraciones (BD del Lab 6 con tareas → 002 → 003) | JDBC + Testcontainers | `MigrationScriptsTest` |
+| Integración (aplicación completa + PostgreSQL 17 real en Docker con los scripts de `database/`) | `@SpringBootTest` + MockMvc + Testcontainers | `AuthIntegrationTest`, `SecurityIntegrationTest`, `TaskOwnershipIntegrationTest` |
 | Front-end | Vitest + React Testing Library | `RegisterForm.test.jsx`, `LoginForm.test.jsx`, `App.test.jsx`, `authApi.test.js`, `taskApi.test.js` y las pruebas del Lab 6 |
 
 ### 11.2 Matriz de pruebas (PT)
@@ -515,13 +575,13 @@ Todas las capturas están en [`docs/evidence/`](docs/evidence).
 | PT-04 | Login correcto | `200` con token firmado | `AuthIntegrationTest.login_shouldReturnSignedTokenWhenCredentialsAreValid`, `login_shouldAcceptEquivalentEmail`; `AuthServiceTest.login_shouldReturnTokenWhenCredentialsAreValid`; `TokenServiceTest` | ✅ |
 | PT-05 | Login incorrecto | `401` sin token | `AuthIntegrationTest.login_shouldReturn401WithoutTokenWhenPasswordIsWrong`, `login_shouldReturn401WhenEmailDoesNotExist`; `AuthServiceTest.login_shouldNotReturnTokenWhenPasswordIsWrong`, `login_shouldNotRevealWhetherEmailExists` | ✅ |
 | PT-06 | Consultar tareas sin token | `401` | `SecurityIntegrationTest.getTasks_shouldReturn401WithoutToken`, `taskEndpoints_shouldReturn401WithoutToken`; `TaskControllerTest.*_shouldReturn401WithoutToken` | ✅ |
-| PT-07 | Consultar tareas con token válido | `200` y solo las propias | | ⬜ |
+| PT-07 | Consultar tareas con token válido | `200` y solo las propias | `TaskOwnershipIntegrationTest.getTasks_shouldReturnOnlyOwnTasks`, `getTasksByRange_shouldReturnOnlyOwnTasks`; `TaskRepositoryTest.findAllByOwnerId_shouldReturnOnlyOwnTasks`; `TaskServiceTest.findAll_shouldReturnTasks` | ✅ |
 | PT-08 | Token modificado | `401` | `SecurityIntegrationTest.getTasks_shouldReturn401WhenSignatureIsModified`, `getTasks_shouldReturn401WhenPayloadIsModified`, `getTasks_shouldReturn401WhenTokenIsSignedWithAnotherKey` | ✅ |
 | PT-09 | Token expirado | `401` | `SecurityIntegrationTest.getTasks_shouldReturn401WhenTokenIsExpired` | ✅ |
-| PT-10 | Consultar tarea ajena | `404`, sin filtración de datos | | ⬜ |
-| PT-11 | Modificar tarea ajena | `404`, sin cambios en BD | | ⬜ |
-| PT-12 | Eliminar tarea ajena | `404`, sin cambios en BD | | ⬜ |
-| PT-13 | Crear tarea autenticada | Se asigna el propietario correcto | | ⬜ |
+| PT-10 | Consultar tarea ajena | `404`, sin filtración de datos | `TaskOwnershipIntegrationTest.getTaskById_shouldReturn404ForTaskOfAnotherUser`, `getTaskById_shouldRespondSameForForeignAndMissingTask`; `TaskRepositoryTest.findByIdAndOwnerId_shouldNotReturnTaskOfAnotherUser`; `TaskServiceTest.findById_shouldNotReturnTaskOfAnotherUser` | ✅ |
+| PT-11 | Modificar tarea ajena | `404`, sin cambios en BD | `TaskOwnershipIntegrationTest.updateTask_shouldReturn404AndKeepTaskOfAnotherUserUnchanged`; `TaskServiceTest.update_shouldNotModifyTaskOfAnotherUser` | ✅ |
+| PT-12 | Eliminar tarea ajena | `404`, sin cambios en BD | `TaskOwnershipIntegrationTest.deleteTask_shouldReturn404AndKeepTaskOfAnotherUser`; `TaskServiceTest.delete_shouldNotDeleteTaskOfAnotherUser` | ✅ |
+| PT-13 | Crear tarea autenticada | Se asigna el propietario correcto | `TaskOwnershipIntegrationTest.createTask_shouldAssignAuthenticatedUserAsOwner`, `createTask_shouldIgnoreOwnerSentByClient`; `TaskServiceTest.create_shouldAssignAuthenticatedUserAsOwner`; `TaskControllerTest.createTask_shouldNotTrustOwnerSentInBody` | ✅ |
 | PT-14 | Usuario `USER` accede a `/admin/summary` | `403` | | ⬜ |
 | PT-15 | Usuario `ADMIN` accede a `/admin/summary` | `200` | | ⬜ |
 | PT-16 | Cerrar sesión desde React | Token y tareas dejan de estar disponibles | | ⬜ |
@@ -532,6 +592,7 @@ Pruebas adicionales:
 - HU-SEG-01: validaciones `400` (correo, contraseña corta, nombre vacío), registro público sin token y *preflight* CORS desde `localhost:5173`.
 - HU-SEG-02: `GET /users/me` con token (`200`), sin token y con token inválido (`401` en JSON); token rechazado con otra llave; llave menor a 32 bytes rechazada; el JWT no incluye datos sensibles. En React: el login guarda el token en memoria, `taskApi` envía `Authorization: Bearer` y un login fallido no entra a las tareas.
 - HU-SEG-04: token de otro emisor, rol inexistente o ausente y `sub` no numérico (`401`); esquema `Basic` (`401`); token válido de un usuario eliminado en `/users/me` (`404`); *preflight* CORS con `Authorization`; `GET /tasks` con token válido (`200`).
+- HU-SEG-03: migración sobre datos del Lab 6 sin borrar tareas, `NOT NULL` y FK del propietario, usuario `legacy` sin credenciales válidas (`MigrationScriptsTest`); correo único y en minúsculas en BD (`UserRepositoryTest`); tarea sin propietario rechazada (`TaskRepositoryTest`); el dueño sigue pudiendo consultar, editar y eliminar su tarea; la respuesta no expone datos del propietario. Los 12 casos del Lab 6 en `TaskServiceTest` y los 13 de `TaskControllerTest` se conservaron adaptados al usuario autenticado.
 
 ### 11.3 Resultados
 
@@ -540,6 +601,7 @@ Pruebas adicionales:
 | HU-SEG-01 | 44 pruebas, 0 fallos | 26 pruebas, 0 fallos | 100 % / 100 % |
 | HU-SEG-02 | 66 pruebas, 0 fallos | 41 pruebas, 0 fallos | 95,2 % / 81,6 % |
 | HU-SEG-04 | 85 pruebas, 0 fallos | 41 pruebas, 0 fallos | 99,1 % / 94,7 % |
+| HU-SEG-03 | 118 pruebas, 0 fallos | 41 pruebas, 0 fallos | 99,1 % / 94,7 % |
 
 \* JaCoCo excluye la clase de arranque, `dto/` y `entity/` (POJOs sin lógica). La regla de `mvn verify` exige como mínimo 70 %. La cobertura no reemplaza las pruebas de los escenarios de seguridad de la matriz.
 
@@ -547,12 +609,12 @@ Pruebas adicionales:
 
 ## 12. Definition of Done
 
-- [ ] El CRUD original continúa funcionando para usuarios autenticados.
+- [x] El CRUD original continúa funcionando para usuarios autenticados.
 - [x] Es posible registrarse e iniciar sesión.
 - [x] Las contraseñas se almacenan de forma segura.
 - [x] El JWT está firmado, vence y se valida en el servidor.
 - [x] Los endpoints de tareas rechazan peticiones sin autenticación.
-- [ ] Ningún usuario puede ver, modificar o eliminar tareas ajenas.
+- [x] Ningún usuario puede ver, modificar o eliminar tareas ajenas.
 - [ ] El rol `USER` no puede acceder al recurso exclusivo `ADMIN`.
 - [ ] React consume recursos protegidos y permite cerrar sesión.
 - [ ] Los tests nuevos y los del laboratorio anterior finalizan correctamente.

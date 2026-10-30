@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * ==========================================================================
@@ -23,7 +24,19 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
     // taskRepository.findById(1L); Busca una tarea por su ID.
     // taskRepository.deleteById(1L); Elimina una tarea por su ID.
 
-    // BONUS (calendario semanal): Spring Data genera la consulta a partir del nombre del método
-    // -> SELECT * FROM tasks WHERE due_date BETWEEN :from AND :to (ambos extremos incluidos)
-    List<TaskEntity> findByDueDateBetween(LocalDate from, LocalDate to);
+    // LAB 7 (HU-SEG-03): TODAS las consultas de la API se filtran por propietario (owner.id).
+    // Una tarea ajena se comporta igual que una inexistente: nunca se devuelve ni se modifica.
+
+    // SELECT * FROM tasks WHERE user_id = :ownerId
+    List<TaskEntity> findAllByOwnerId(Long ownerId);
+
+    // SELECT * FROM tasks WHERE id = :id AND user_id = :ownerId
+    Optional<TaskEntity> findByIdAndOwnerId(Long id, Long ownerId);
+
+    // SELECT COUNT(*) > 0 FROM tasks WHERE id = :id AND user_id = :ownerId
+    boolean existsByIdAndOwnerId(Long id, Long ownerId);
+
+    // BONUS (calendario semanal) solo con las tareas propias
+    // -> SELECT * FROM tasks WHERE user_id = :ownerId AND due_date BETWEEN :from AND :to (ambos extremos incluidos)
+    List<TaskEntity> findByOwnerIdAndDueDateBetween(Long ownerId, LocalDate from, LocalDate to);
 }

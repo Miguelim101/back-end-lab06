@@ -42,6 +42,11 @@ public class TaskEntity {
     @Column(name = "createdAt", nullable =  false, updatable = false)
     private LocalDateTime createdAt;
 
+    // LAB 7: propietario de la tarea (FK tasks.user_id -> users.id). LAZY: solo se carga si se necesita
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false, updatable = false)
+    private UserEntity owner;
+
     public TaskEntity() { }
 
     public long getId() { return this.id; }
@@ -51,6 +56,7 @@ public class TaskEntity {
     public TaskPriority getPriority() { return this.priority; }
     public LocalDate getDueDate() { return this.dueDate; }
     public LocalDateTime getCreatedAt() { return this.createdAt; }
+    public UserEntity getOwner() { return this.owner; }
 
     public void setId(long id) { this.id = id; }
     public void setTitle(String title) { this.title = title; }
@@ -59,6 +65,7 @@ public class TaskEntity {
     public void setPriority(TaskPriority priority) { this.priority = priority; }
     public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setOwner(UserEntity owner) { this.owner = owner; }
 
     // Bloque para rellenar la fecha automáticamente en Java si creamos una tarea desde el backend
     /*
