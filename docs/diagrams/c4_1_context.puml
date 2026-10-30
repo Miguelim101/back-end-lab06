@@ -1,0 +1,15 @@
+@startuml c4_1_context
+' C4 · Nivel 1 · Contexto del sistema ToDo (Lab 7: seguridad con JWT)
+!include <C4/C4_Context>
+
+title ToDo · Nivel 1 · Contexto
+
+Person(user, "Usuario", "Persona registrada (rol USER) que gestiona únicamente sus propias tareas.")
+Person(admin, "Administrador", "Cuenta con rol ADMIN que consulta métricas agregadas del sistema.")
+
+System(todo, "Sistema ToDo", "Permite registrarse, iniciar sesión y gestionar tareas privadas (CRUD + calendario semanal).")
+
+Rel(user, todo, "Se registra, inicia sesión y gestiona sus tareas", "HTTPS / navegador")
+Rel(admin, todo, "Consulta el resumen administrativo", "HTTPS / navegador")
+SHOW_LEGEND()
+@enduml

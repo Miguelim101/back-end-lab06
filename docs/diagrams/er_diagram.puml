@@ -1,0 +1,30 @@
+@startuml er_diagram
+' Modelo entidad-relación · PostgreSQL todo_db (Lab 7)
+hide circle
+skinparam linetype ortho
+title ToDo · Modelo entidad-relación (Lab 7)
+
+entity "users" as users <<nuevo>> {
+  * id : BIGSERIAL <<PK>>
+  --
+  * name : VARCHAR(100)
+  * email : VARCHAR(255) <<UNIQUE, minúsculas>>
+  * password_hash : VARCHAR(100)
+  * role : VARCHAR(10) <<CHECK USER | ADMIN>>
+  * created_at : TIMESTAMP
+}
+
+entity "tasks" as tasks {
+  * id : BIGSERIAL <<PK>>
+  --
+  * title : VARCHAR(120)
+  description : VARCHAR(500)
+  * status : VARCHAR(20) <<CHECK>>
+  * priority : VARCHAR(10) <<CHECK>>
+  due_date : DATE
+  * created_at : TIMESTAMP
+  * user_id : BIGINT <<FK users.id, NOT NULL, nuevo>>
+}
+
+users ||--o{ tasks : "es propietario de"
+@enduml
