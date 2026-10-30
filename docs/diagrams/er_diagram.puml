@@ -23,8 +23,15 @@ entity "tasks" as tasks {
   * priority : VARCHAR(10) <<CHECK>>
   due_date : DATE
   * created_at : TIMESTAMP
-  * user_id : BIGINT <<FK users.id, NOT NULL, nuevo>>
+  * user_id : BIGINT <<FK fk_tasks_user, NOT NULL, nuevo>>
 }
 
-users ||--o{ tasks : "es propietario de"
+users ||--o{ tasks : "es propietario de\n(ON DELETE CASCADE)"
+
+note right of tasks
+  Índice idx_tasks_user_id para las
+  consultas por propietario.
+  Las tareas del Lab 6 se asignaron
+  al usuario legacy@todo.local (003).
+end note
 @enduml

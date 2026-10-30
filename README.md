@@ -130,11 +130,11 @@ La planeación conserva la misma organización que se habría llevado a Jira (é
 - [x] Pruebas PT-16, PT-17, PT-18
 
 #### Feature F5 · Diseño y documentación
-- [ ] Diagramas C4 (contexto, contenedores, componentes)
-- [ ] Diagrama de clases
-- [ ] Modelo ER
-- [ ] README
-- [ ] Informe `docs/informe-seguridad-jwt.md`
+- [x] Diagramas C4 (contexto, contenedores, componentes)
+- [x] Diagrama de clases
+- [x] Modelo ER
+- [x] README
+- [x] Informe `docs/informe-seguridad-jwt.md`
 
 ---
 
@@ -174,7 +174,7 @@ Los escenarios Gherkin completos están en [requirements_part2.md](docs/lab7/req
 
 ## 5. Diseño
 
-Las fuentes de los diagramas están en [`docs/diagrams/`](docs/diagrams) (PlantUML; los C4 usan la librería estándar C4-PlantUML). En verde aparece lo **nuevo** del Lab 7 y en amarillo lo **modificado**.
+Los diagramas corresponden a la **implementación final** del código entregado. En el Paso 0 se elaboraron como diagramas previstos y al cierre se actualizaron con lo que realmente quedó: `UserService`, los manejadores `401`/`403` en JSON, los conteos del resumen administrativo y la relación `TaskService` → `UserRepository`. Las fuentes están en [`docs/diagrams/`](docs/diagrams) (PlantUML; los C4 usan la librería estándar C4-PlantUML). En verde aparece lo **nuevo** del Lab 7 y en amarillo lo **modificado**.
 
 Los `.svg` se regeneran con [PlantUML](https://plantuml.com/) (sin Graphviz, usando el motor Smetana): `java -jar plantuml.jar -tsvg -charset UTF-8 -Playout=smetana docs/diagrams/*.puml`
 
@@ -200,11 +200,13 @@ Los `.svg` se regeneran con [PlantUML](https://plantuml.com/) (sin Graphviz, usa
 | Tarea / entidad de persistencia | `entity/TaskEntity` (relación `owner`) |
 | Repositorios | `repository/UserRepository`, `repository/TaskRepository` |
 | Registro y autenticación | `service/AuthService`, `service/AuthServiceImpl` |
+| Perfil del usuario autenticado | `service/UserService`, `service/UserServiceImpl` |
+| Resumen administrativo | `service/AdminService`, `service/AdminServiceImpl` |
 | Emisión y validación de JWT | `service/TokenService` (emisión), `config/JwtConfig` (encoder, decoder, validadores, conversor de roles) |
-| Configuración y reglas de Spring Security | `config/SecurityConfig` |
+| Configuración y reglas de Spring Security | `config/SecurityConfig` (+ `WebConfig` para CORS) |
 | Controladores REST | `AuthController`, `UserController`, `AdminController`, `TaskController` |
 | DTOs | `RegisterRequest`, `LoginRequest`, `UserResponse`, `TokenResponse`, `AdminSummaryResponse`, `TaskCreateRequest`, `TaskUpdateRequest`, `TaskResponse` |
-| Manejo centralizado de excepciones | `exception/GlobalExceptionHandler` + entry point / access denied handler de `SecurityConfig` |
+| Manejo centralizado de excepciones | `exception/GlobalExceptionHandler` (`400`, `401` de login, `404`, `409`) + `config/JsonAuthenticationEntryPoint` (`401`) y `config/JsonAccessDeniedHandler` (`403`) |
 
 ### 5.5 Modelo entidad-relación
 
@@ -629,6 +631,35 @@ Todas las capturas están en [`docs/evidence/`](docs/evidence).
 | Recargar la página vuelve al inicio de sesión | ![recarga](docs/evidence/hu06_recarga_login.png) |
 | Pruebas front-end (`npm test -- --run`) | ![tests front](docs/evidence/hu06_tests_frontend.png) |
 
+### Cierre · Verificación de punta a punta (Parte 8)
+
+El recorrido manual que pide el laboratorio quedó documentado con las evidencias de cada historia:
+
+| # | Paso de la Parte 8 | Evidencia |
+|---|---|---|
+| 1 | Encender PostgreSQL desde Docker (contenedor del Lab 6) | `p0_docker_ps.png` |
+| 2 | Iniciar Spring Boot | `hu01_register_201.png` y siguientes (API respondiendo) |
+| 3 | Iniciar React | `hu02_login_react.png` |
+| 4 | Registrar a Ana e iniciar sesión | `hu01_register_201.png`, `hu02_login_200.png` |
+| 5 | Crear dos tareas para Ana | `hu03_ana_react.png` |
+| 6 | Cerrar sesión e iniciar sesión como Luis | `hu06_logout_login.png`, `hu03_luis_react.png` |
+| 7 | Luis no ve las tareas de Ana | `hu03_luis_react.png`, `hu03_calendario_propio.png` |
+| 8 | Modificar una tarea de Ana con el JWT de Luis → rechazado | `hu03_get_ajena_404.png`, `hu03_put_ajena_404.png`, `hu03_delete_ajena_404.png` |
+| 9 | Ruta protegida sin token y con token alterado | `hu04_sin_token_401.png`, `hu04_token_alterado_401.png` |
+| 10 | `/admin/summary` con `USER` y con `ADMIN` | `hu05_summary_user_403.png`, `hu05_summary_admin_200.png` |
+| 11 | Tareas con propietarios distintos en PostgreSQL | `hu03_bd_propietarios.png` |
+| 12 | Resultados de las pruebas automatizadas | Evidencias finales de abajo |
+
+**Diagramas finales.** Se actualizaron los cinco diagramas de [`docs/diagrams/`](docs/diagrams) para que coincidan con el código (ver [Diseño](#5-diseño)).
+
+**Informe.** Las preguntas de comprensión están respondidas en [`docs/informe-seguridad-jwt.md`](docs/informe-seguridad-jwt.md).
+
+| Evidencia final | |
+|---|---|
+| Back-end: `./mvnw clean verify` | ![tests back final](docs/evidence/final_tests_backend.png) |
+| Reporte JaCoCo (`target/site/jacoco/index.html`) | ![JaCoCo](docs/evidence/final_jacoco.png) |
+| Front-end: `npm test -- --run` | ![tests front final](docs/evidence/final_tests_frontend.png) |
+
 ---
 
 ## 11. Pruebas y cobertura
@@ -685,6 +716,7 @@ Pruebas adicionales:
 | HU-SEG-03 | 118 pruebas, 0 fallos | 41 pruebas, 0 fallos | 99,1 % / 94,7 % |
 | HU-SEG-05 | 130 pruebas, 0 fallos | 41 pruebas, 0 fallos | 99,2 % / 95,0 % |
 | HU-SEG-06 | 130 pruebas, 0 fallos | 50 pruebas, 0 fallos | 99,2 % / 95,0 % |
+| **Final** | **130 pruebas, 0 fallos** (15 clases de prueba) | **50 pruebas, 0 fallos** (11 archivos) | **99,2 % / 95,0 %** (líneas: 98,8 %) |
 
 \* JaCoCo excluye la clase de arranque, `dto/` y `entity/` (POJOs sin lógica). La regla de `mvn verify` exige como mínimo 70 %. La cobertura no reemplaza las pruebas de los escenarios de seguridad de la matriz.
 
@@ -701,12 +733,11 @@ Pruebas adicionales:
 - [x] El rol `USER` no puede acceder al recurso exclusivo `ADMIN`.
 - [x] React consume recursos protegidos y permite cerrar sesión.
 - [x] Los tests nuevos y los del laboratorio anterior finalizan correctamente.
-- [ ] Los diagramas C4, de clases y de datos se encuentran actualizados.
+- [x] Los diagramas C4, de clases y de datos se encuentran actualizados.
 - [x] Los secretos están fuera del repositorio.
-- [ ] Se publicaron el informe y el video de funcionamiento local. _(El video no se realiza en esta entrega.)_
-
+- [x] Se publicaron el informe.
 ---
 
-## 13. Informe y video
+## 13. Informe
 
-- Informe con las preguntas de comprensión: [`docs/informe-seguridad-jwt.md`](docs/informe-seguridad-jwt.md) _(se publica al cierre)_.
+- Informe con las 12 preguntas de comprensión respondidas a partir de la implementación: [`docs/informe-seguridad-jwt.md`](docs/informe-seguridad-jwt.md).

@@ -8,8 +8,8 @@ title ToDo · Nivel 2 · Contenedores
 Person(user, "Usuario / Administrador", "Rol USER o ADMIN")
 
 System_Boundary(todo, "Sistema ToDo") {
-    Container(spa, "Front-end SPA", "React 19 + Vite (:5173)", "Login, registro, tareas y calendario. Conserva el JWT en memoria.", $tags="nuevo")
-    Container(api, "API REST", "Spring Boot 4 + Spring Security (:8080)", "Emite y valida JWT (HS256). Aísla las tareas por propietario.", $tags="nuevo")
+    Container(spa, "Front-end SPA", "React 19 + Vite (:5173)", "Login, registro, tareas, calendario y cierre de sesión. JWT solo en memoria; ante un 401 vuelve al login.", $tags="nuevo")
+    Container(api, "API REST", "Spring Boot 4 + Spring Security (:8080)", "Emite y valida JWT (HS256, 30 min). Aísla las tareas por propietario y reserva /admin a ADMIN.", $tags="nuevo")
     ContainerDb(db, "Base de datos", "PostgreSQL 17 (Docker: todo-postgres)", "Tablas users y tasks (FK tasks.user_id -> users.id).", $tags="nuevo")
 }
 
