@@ -124,10 +124,10 @@ La planeación conserva la misma organización que se habría llevado a Jira (é
 #### Feature F4 · Sesión en el frontend
 
 **HU-SEG-06 · Sesión en React**
-- [ ] Barra con usuario y "Cerrar sesión"
-- [ ] Limpieza de estado al cerrar sesión
-- [ ] Redirección al login ante 401
-- [ ] Pruebas PT-16, PT-17, PT-18
+- [x] Barra con usuario y "Cerrar sesión"
+- [x] Limpieza de estado al cerrar sesión
+- [x] Redirección al login ante 401
+- [x] Pruebas PT-16, PT-17, PT-18
 
 #### Feature F5 · Diseño y documentación
 - [ ] Diagramas C4 (contexto, contenedores, componentes)
@@ -151,9 +151,9 @@ La planeación conserva la misma organización que se habría llevado a Jira (é
 | RF-SEG-05 | Proteger el CRUD | Requerir token válido en los recursos de tareas. | ✅ HU-SEG-04 |
 | RF-SEG-06 | Aislar tareas por usuario | Listar, consultar, crear, editar y eliminar solo tareas propias. | ✅ HU-SEG-03 |
 | RF-SEG-07 | Gestionar autorización por roles | Reservar un endpoint administrativo exclusivamente al rol `ADMIN`. | ✅ HU-SEG-05 |
-| RF-SEG-08 | Cerrar sesión en frontend | Limpiar el estado de autenticación y volver al inicio de sesión. | ⬜ |
+| RF-SEG-08 | Cerrar sesión en frontend | Limpiar el estado de autenticación y volver al inicio de sesión. | ✅ HU-SEG-06 |
 | RF-SEG-09 | Manejar errores de seguridad | Diferenciar errores de validación, autenticación, autorización y recursos inexistentes. | ✅ HU-SEG-01..05 (`400`/`401`/`403`/`404`/`409`) |
-| RF-SEG-10 | Validar seguridad mediante pruebas | Cubrir rutas públicas, protegidas, token inválido y acceso cruzado. | ⬜ |
+| RF-SEG-10 | Validar seguridad mediante pruebas | Cubrir rutas públicas, protegidas, token inválido y acceso cruzado. | ✅ PT-01..PT-18 ([matriz](#112-matriz-de-pruebas-pt)) |
 
 Las reglas funcionales y de seguridad (2.1) están en [requirements_part2.md](docs/lab7/requirements_part2.md#21-reglas-funcionales-y-de-seguridad).
 
@@ -166,7 +166,7 @@ Las reglas funcionales y de seguridad (2.1) están en [requirements_part2.md](do
 | HU-SEG-03 | **Como** usuario autenticado, **quiero** ver y modificar únicamente mis tareas, **para** mantener privada mi información. | `GET /tasks` devuelve solo las tareas propias. Operar sobre una tarea ajena: `404 Not Found` y la tarea queda sin cambios. | ✅ |
 | HU-SEG-04 | **Como** responsable del sistema, **quiero** que las APIs de tareas exijan un JWT válido, **para** impedir operaciones anónimas o falsificadas. | Sin `Authorization`: `401`. Token alterado o expirado: `401`. | ✅ |
 | HU-SEG-05 | **Como** administrador, **quiero** consultar un resumen general no sensible, **para** conocer la utilización del sistema. | Rol ADMIN: `200 OK` con métricas agregadas. Rol USER: `403 Forbidden`. | ✅ |
-| HU-SEG-06 | **Como** usuario autenticado, **quiero** acceder a mis tareas mientras dure la sesión y cerrarla al terminar, **para** controlar el uso de mi cuenta. | "Cerrar sesión" elimina el token del estado, oculta las tareas y muestra el inicio de sesión. | ⬜ |
+| HU-SEG-06 | **Como** usuario autenticado, **quiero** acceder a mis tareas mientras dure la sesión y cerrarla al terminar, **para** controlar el uso de mi cuenta. | "Cerrar sesión" elimina el token del estado, oculta las tareas y muestra el inicio de sesión. | ✅ |
 
 Los escenarios Gherkin completos están en [requirements_part2.md](docs/lab7/requirements_part2.md#3-historias-de-usuario).
 
@@ -363,7 +363,9 @@ El resumen solo contiene conteos: no incluye correos, nombres, títulos ni conte
 | Propiedad de las tareas | El propietario se toma **siempre** del `sub` del JWT validado (`@AuthenticationPrincipal Jwt`), nunca del body ni de la URL; un `userId`/`owner` enviado por el cliente se ignora. Todas las consultas del repositorio filtran por `owner.id` (`findAllByOwnerId`, `findByIdAndOwnerId`, `existsByIdAndOwnerId`, `findByOwnerIdAndDueDateBetween`). | `TaskController`, `TaskServiceImpl`, `TaskRepository` |
 | Tareas ajenas | Una tarea de otro usuario se trata igual que una inexistente: `404 Not Found`, sin datos en la respuesta y sin cambios en la BD. Así no se revela que existe. | `TaskServiceImpl` |
 | Errores 401 | Un *entry point* propio responde en JSON con el mismo formato `{status, message}` y conserva `WWW-Authenticate: Bearer`. El mensaje es genérico y el token nunca se registra. | `JsonAuthenticationEntryPoint` |
-| Almacenamiento en el front | El JWT vive **solo en memoria** (`api/session.js`), nunca en `localStorage` ni en cookies. Al recargar la página se pierde la sesión y hay que volver a iniciar sesión (decisión del laboratorio). | `session.js`, `AuthContext.jsx` |
+| Almacenamiento en el front | El JWT vive **solo en memoria** (`api/session.js`), nunca en `localStorage` ni en cookies. Al recargar la página se pierde la sesión y hay que volver a iniciar sesión (decisión del laboratorio): es menos cómodo, pero un script inyectado no puede leer un token persistido en el navegador. | `session.js`, `AuthContext.jsx` |
+| Cierre de sesión | **Del lado del cliente**: "Cerrar sesión" borra el token de memoria y el usuario del contexto; `TasksPage` se desmonta, así que las tareas del usuario anterior desaparecen de la UI. **Limitación:** el JWT no se revoca en el servidor; si alguien lo copió, sigue siendo válido hasta su expiración (máximo 30 min). | `AuthContext.jsx`, `UserBar.jsx`, `App.jsx` |
+| Sesión expirada | Cualquier `401` en una petición protegida (`taskApi.js`) borra el token y avisa a `AuthContext`, que vuelve al inicio de sesión con el mensaje "Tu sesión expiró, inicia sesión nuevamente". El `401` del login (credenciales inválidas) no dispara este flujo. | `session.js`, `taskApi.js`, `AuthContext.jsx` |
 | Logs | Se desactiva el usuario en memoria que Spring Boot crea por defecto, porque imprime una contraseña generada en los logs. `show-sql` solo muestra `?` en los parámetros, nunca hashes ni contraseñas. | `application.yaml` |
 | CORS | La cadena de seguridad reutiliza la configuración de `WebConfig` (`http://localhost:5173`), así que el *preflight* del navegador funciona sin autenticación. | `SecurityConfig`, `WebConfig` |
 
@@ -609,6 +611,24 @@ Todas las capturas están en [`docs/evidence/`](docs/evidence).
 | Usuario `ADMIN` → `200` con métricas agregadas | ![200](docs/evidence/hu05_summary_admin_200.png) |
 | Pruebas back-end (`./mvnw clean verify`) | ![tests back](docs/evidence/hu05_tests_backend.png) |
 
+### HU-SEG-06 · Sesión en React
+
+**Front-end.**
+- `features/auth/components/UserBar.jsx` muestra el nombre del usuario autenticado y el botón **Cerrar sesión** (mockup "Tareas autenticadas").
+- `AuthContext.logout` borra el token de memoria y el usuario; `App.jsx` desmonta `TasksPage` y muestra `AuthPage`, así que no quedan tareas del usuario anterior en pantalla.
+- `api/session.js` permite registrar un manejador de `401`. `taskApi.js` lo invoca cuando una petición protegida responde `401` (token vencido o inválido), y `AuthContext` limpia la sesión y vuelve al inicio de sesión con un aviso.
+- Al recargar la página la sesión se pierde (el token solo vive en memoria) y se muestra el inicio de sesión.
+
+**Back-end.** Sin cambios en esta historia.
+
+| Evidencia | |
+|---|---|
+| Usuario autenticado con el botón "Cerrar sesión" | ![barra](docs/evidence/hu06_barra_usuario.png) |
+| Después de cerrar sesión: inicio de sesión, sin tareas | ![logout](docs/evidence/hu06_logout_login.png) |
+| Token rechazado por el back-end (`401`) → aviso de sesión expirada | ![sesión expirada](docs/evidence/hu06_sesion_expirada.png) |
+| Recargar la página vuelve al inicio de sesión | ![recarga](docs/evidence/hu06_recarga_login.png) |
+| Pruebas front-end (`npm test -- --run`) | ![tests front](docs/evidence/hu06_tests_frontend.png) |
+
 ---
 
 ## 11. Pruebas y cobertura
@@ -622,7 +642,7 @@ Todas las capturas están en [`docs/evidence/`](docs/evidence).
 | Repositorio (consultas y restricciones contra PostgreSQL real) | `@DataJpaTest` + Testcontainers | `TaskRepositoryTest`, `UserRepositoryTest` |
 | Migraciones (BD del Lab 6 con tareas → 002 → 003) | JDBC + Testcontainers | `MigrationScriptsTest` |
 | Integración (aplicación completa + PostgreSQL 17 real en Docker con los scripts de `database/`) | `@SpringBootTest` + MockMvc + Testcontainers | `AuthIntegrationTest`, `SecurityIntegrationTest`, `TaskOwnershipIntegrationTest`, `AdminIntegrationTest` |
-| Front-end | Vitest + React Testing Library | `RegisterForm.test.jsx`, `LoginForm.test.jsx`, `App.test.jsx`, `authApi.test.js`, `taskApi.test.js` y las pruebas del Lab 6 |
+| Front-end | Vitest + React Testing Library | `RegisterForm.test.jsx`, `LoginForm.test.jsx`, `UserBar.test.jsx`, `App.test.jsx`, `SessionExpiration.test.jsx`, `authApi.test.js`, `taskApi.test.js` y las pruebas del Lab 6 |
 
 ### 11.2 Matriz de pruebas (PT)
 
@@ -643,9 +663,9 @@ Todas las capturas están en [`docs/evidence/`](docs/evidence).
 | PT-13 | Crear tarea autenticada | Se asigna el propietario correcto | `TaskOwnershipIntegrationTest.createTask_shouldAssignAuthenticatedUserAsOwner`, `createTask_shouldIgnoreOwnerSentByClient`; `TaskServiceTest.create_shouldAssignAuthenticatedUserAsOwner`; `TaskControllerTest.createTask_shouldNotTrustOwnerSentInBody` | ✅ |
 | PT-14 | Usuario `USER` accede a `/admin/summary` | `403` | `AdminIntegrationTest.summary_shouldReturn403ForUser`, `summary_shouldReturn403WithTokenIssuedBeforePromotion`; `AdminControllerTest.summary_shouldReturn403ForUser` | ✅ |
 | PT-15 | Usuario `ADMIN` accede a `/admin/summary` | `200` | `AdminIntegrationTest.summary_shouldReturn200ForAdmin`, `summary_shouldNotExposePrivateData`; `AdminControllerTest.summary_shouldReturn200ForAdmin`; `AdminServiceTest` | ✅ |
-| PT-16 | Cerrar sesión desde React | Token y tareas dejan de estar disponibles | | ⬜ |
-| PT-17 | Respuesta `401` desde una petición React | Redirige a inicio de sesión | | ⬜ |
-| PT-18 | Usuario distinto inicia sesión | Solo se muestran sus propias tareas | | ⬜ |
+| PT-16 | Cerrar sesión desde React | Token y tareas dejan de estar disponibles | `App.test.jsx` › "PT-16 · cerrar sesión debería borrar el token, ocultar las tareas…"; `UserBar.test.jsx` | ✅ |
+| PT-17 | Respuesta `401` desde una petición React | Redirige a inicio de sesión | `SessionExpiration.test.jsx` › "PT-17 · un 401 en una petición protegida…" (con el `taskApi` real); `taskApi.test.js` › "debería cerrar la sesión cuando… responde 401" | ✅ |
+| PT-18 | Usuario distinto inicia sesión | Solo se muestran sus propias tareas | `App.test.jsx` › "PT-18 · otro usuario que inicia sesión solo debería ver sus propias tareas"; en el back-end lo garantiza `TaskOwnershipIntegrationTest` (PT-07) | ✅ |
 
 Pruebas adicionales:
 - HU-SEG-01: validaciones `400` (correo, contraseña corta, nombre vacío), registro público sin token y *preflight* CORS desde `localhost:5173`.
@@ -653,6 +673,7 @@ Pruebas adicionales:
 - HU-SEG-04: token de otro emisor, rol inexistente o ausente y `sub` no numérico (`401`); esquema `Basic` (`401`); token válido de un usuario eliminado en `/users/me` (`404`); *preflight* CORS con `Authorization`; `GET /tasks` con token válido (`200`).
 - HU-SEG-03: migración sobre datos del Lab 6 sin borrar tareas, `NOT NULL` y FK del propietario, usuario `legacy` sin credenciales válidas (`MigrationScriptsTest`); correo único y en minúsculas en BD (`UserRepositoryTest`); tarea sin propietario rechazada (`TaskRepositoryTest`); el dueño sigue pudiendo consultar, editar y eliminar su tarea; la respuesta no expone datos del propietario. Los 12 casos del Lab 6 en `TaskServiceTest` y los 13 de `TaskControllerTest` se conservaron adaptados al usuario autenticado.
 - HU-SEG-05: diferencia `401` (sin token) / `403` (rol insuficiente) / `404` (el ADMIN tampoco ve tareas ajenas); el resumen no expone correos ni títulos; un usuario promovido necesita un nuevo login porque el rol viaja en el JWT; el servicio solo usa conteos.
+- HU-SEG-06: barra con el nombre del usuario; un `404` no cierra la sesión (solo el `401`); un login con credenciales inválidas no muestra el aviso de sesión expirada.
 
 ### 11.3 Resultados
 
@@ -663,6 +684,7 @@ Pruebas adicionales:
 | HU-SEG-04 | 85 pruebas, 0 fallos | 41 pruebas, 0 fallos | 99,1 % / 94,7 % |
 | HU-SEG-03 | 118 pruebas, 0 fallos | 41 pruebas, 0 fallos | 99,1 % / 94,7 % |
 | HU-SEG-05 | 130 pruebas, 0 fallos | 41 pruebas, 0 fallos | 99,2 % / 95,0 % |
+| HU-SEG-06 | 130 pruebas, 0 fallos | 50 pruebas, 0 fallos | 99,2 % / 95,0 % |
 
 \* JaCoCo excluye la clase de arranque, `dto/` y `entity/` (POJOs sin lógica). La regla de `mvn verify` exige como mínimo 70 %. La cobertura no reemplaza las pruebas de los escenarios de seguridad de la matriz.
 
@@ -677,10 +699,10 @@ Pruebas adicionales:
 - [x] Los endpoints de tareas rechazan peticiones sin autenticación.
 - [x] Ningún usuario puede ver, modificar o eliminar tareas ajenas.
 - [x] El rol `USER` no puede acceder al recurso exclusivo `ADMIN`.
-- [ ] React consume recursos protegidos y permite cerrar sesión.
-- [ ] Los tests nuevos y los del laboratorio anterior finalizan correctamente.
+- [x] React consume recursos protegidos y permite cerrar sesión.
+- [x] Los tests nuevos y los del laboratorio anterior finalizan correctamente.
 - [ ] Los diagramas C4, de clases y de datos se encuentran actualizados.
-- [ ] Los secretos están fuera del repositorio.
+- [x] Los secretos están fuera del repositorio.
 - [ ] Se publicaron el informe y el video de funcionamiento local. _(El video no se realiza en esta entrega.)_
 
 ---
