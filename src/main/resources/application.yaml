@@ -3,6 +3,10 @@
 #======================================================================#
 
 spring:
+  # LAB 7: lee variables locales desde back-end-lab06/.env (excluido de Git). Ver .env.example
+  config:
+    import: optional:file:.env[.properties]
+
   # LAB 7: los usuarios viven en la tabla users. Se desactiva el usuario en memoria que Spring Boot
   # crea por defecto, porque además imprime una contraseña generada en los logs
   autoconfigure:
@@ -24,3 +28,15 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+#======================================================================#
+#== LAB 7: Configuración del JWT                                     ==#
+#======================================================================#
+app:
+  jwt:
+    # Llave HMAC (Base64, mínimo 32 bytes). SIN valor por defecto: si falta JWT_SECRET la app no arranca
+    secret: ${JWT_SECRET}
+    # Emisor (claim iss) que se escribe al firmar y se exige al validar
+    issuer: todo-api
+    # Duración del token definida por el laboratorio (regla 2.1.6)
+    expiration-minutes: 30

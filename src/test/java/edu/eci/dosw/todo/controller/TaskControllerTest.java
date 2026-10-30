@@ -1,5 +1,7 @@
 package edu.eci.dosw.todo.controller;
 
+import edu.eci.dosw.todo.config.JsonAuthenticationEntryPoint;
+import edu.eci.dosw.todo.config.JwtConfig;
 import edu.eci.dosw.todo.config.SecurityConfig;
 import edu.eci.dosw.todo.dto.TaskCreateRequest;
 import edu.eci.dosw.todo.dto.TaskResponse;
@@ -10,6 +12,7 @@ import edu.eci.dosw.todo.entity.TaskStatus;
 import edu.eci.dosw.todo.exception.InvalidDateRangeException;
 import edu.eci.dosw.todo.exception.TaskNotFoundException;
 import edu.eci.dosw.todo.service.TaskService;
+import edu.eci.dosw.todo.support.AbstractWebMvcSecurityTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +38,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TaskController.class)
-@Import(SecurityConfig.class) // Usa las reglas reales de Spring Security en el slice web
-class TaskControllerTest {
+@Import({SecurityConfig.class, JwtConfig.class, JsonAuthenticationEntryPoint.class}) // Usa las reglas reales de Spring Security en el slice web
+class TaskControllerTest extends AbstractWebMvcSecurityTest {
 
     private static final String BASE_URL = "/api/v1/tasks";
 

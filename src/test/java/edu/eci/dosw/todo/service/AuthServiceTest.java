@@ -1,10 +1,13 @@
 package edu.eci.dosw.todo.service;
 
+import edu.eci.dosw.todo.dto.LoginRequest;
 import edu.eci.dosw.todo.dto.RegisterRequest;
+import edu.eci.dosw.todo.dto.TokenResponse;
 import edu.eci.dosw.todo.dto.UserResponse;
 import edu.eci.dosw.todo.entity.Role;
 import edu.eci.dosw.todo.entity.UserEntity;
 import edu.eci.dosw.todo.exception.EmailAlreadyExistsException;
+import edu.eci.dosw.todo.exception.InvalidCredentialsException;
 import edu.eci.dosw.todo.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,14 +19,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
- * Pruebas unitarias del registro (HU-SEG-01). El repositorio y el PasswordEncoder
- * son mocks: se prueba solo la lógica del servicio, sin base de datos.
+ * Pruebas unitarias del registro (HU-SEG-01) y del login (HU-SEG-02). El repositorio,
+ * el PasswordEncoder y el TokenService son mocks: se prueba solo la lógica del servicio.
  */
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -33,6 +39,9 @@ class AuthServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private TokenService tokenService;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -131,5 +140,70 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOf(EmailAlreadyExistsException.class);
+    }
+
+    // --- PRUEBAS DE LOGIN (login) ---
+
+    private UserEntity storedUser() {
+        UserEntity user = new UserEntity();
+        user.setId(1L);
+        user.setName("Ana Pérez");
+        user.setEmail("ana@example.com");
+        user.setPasswordHash("$2a$10$hash");
+        user.setRole(Role.USER);
+        return user;
+    }
+
+    @Test
+    void login_shouldReturnTokenWhenCredentialsAreValid() {
+        UserEntity user = storedUser();
+        TokenResponse token = new TokenResponse("header.payload.signature", 1800);
+        when(userRepository.findByEmail("ana@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("ContrasenaDemo123!", "$2a$10$hash")).thenReturn(true);
+        when(tokenService.generateToken(user)).thenReturn(token);
+
+        TokenResponse result = authService.login(new LoginRequest("ana@example.com", "ContrasenaDemo123!"));
+
+        assertThat(result).isEqualTo(token);
+        verify(tokenService, times(1)).generateToken(user);
+    }
+
+    @Test
+    void login_shouldNormalizeEmail() {
+        UserEntity user = storedUser();
+        when(userRepository.findByEmail("ana@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
+        when(tokenService.generateToken(user)).thenReturn(new TokenResponse("t", 1800));
+
+        authService.login(new LoginRequest("  ANA@Example.com ", "ContrasenaDemo123!"));
+
+        verify(userRepository).findByEmail("ana@example.com");
+    }
+
+    @Test
+    void login_shouldNotReturnTokenWhenPasswordIsWrong() {
+        when(userRepository.findByEmail("ana@example.com")).thenReturn(Optional.of(storedUser()));
+        when(passwordEncoder.matches("incorrecta", "$2a$10$hash")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest("ana@example.com", "incorrecta")))
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessage("Invalid email or password");
+
+        verify(tokenService, never()).generateToken(any());
+    }
+
+    @Test
+    void login_shouldNotRevealWhetherEmailExists() {
+        // Correo inexistente: mismo error y mismo mensaje que una contraseña incorrecta
+        when(userRepository.findByEmail("nadie@example.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("$2a$10$dummy");
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest("nadie@example.com", "ContrasenaDemo123!")))
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessage("Invalid email or password");
+
+        // Se compara contra un hash de relleno para que el tiempo de respuesta no delate la cuenta
+        verify(passwordEncoder).matches("ContrasenaDemo123!", "$2a$10$dummy");
+        verify(tokenService, never()).generateToken(any());
     }
 }

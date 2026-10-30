@@ -10,12 +10,14 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * ==========================================================================
  * == LAB 7: Reglas de Spring Security. API stateless: no hay sesión HTTP  ==
- * ==        ni formulario de login; solo registro y login son públicos    ==
+ * ==        ni formulario de login; solo registro y login son públicos.   ==
+ * ==        El resto exige "Authorization: Bearer <JWT>" válido          ==
  * ==========================================================================
  */
 @Configuration
@@ -23,21 +25,28 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   JwtAuthenticationConverter jwtAuthenticationConverter,
+                                                   JsonAuthenticationEntryPoint authenticationEntryPoint) throws Exception {
         http
-                // Sin cookies de sesión no hay riesgo CSRF; la identidad viajará en el header Authorization
+                // Sin cookies de sesión no hay riesgo CSRF; la identidad viaja en el header Authorization
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults()) // Usa la configuración CORS de WebConfig
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
                         // /error público para que un 400/404 no termine convertido en 401
                         .requestMatchers("/error").permitAll()
                         // TEMPORAL: se elimina en HU-SEG-04 (protección del CRUD con JWT)
                         .requestMatchers("/api/v1/tasks/**").permitAll()
-                        .anyRequest().authenticated());
+                        .anyRequest().authenticated())
+                // Valida el Bearer token (firma, exp, iss, sub, role) con el JwtDecoder de JwtConfig
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
+                        .authenticationEntryPoint(authenticationEntryPoint))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint));
 
         return http.build();
     }

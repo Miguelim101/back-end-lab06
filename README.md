@@ -88,13 +88,13 @@ La planeación conserva la misma organización que se habría llevado a Jira (é
 - [x] Pruebas PT-01, PT-02, PT-03
 
 **HU-SEG-02 · Inicio de sesión**
-- [ ] Configuración JWT (encoder/decoder)
-- [ ] `TokenService`
-- [ ] Login con 401 genérico
-- [ ] `GET /users/me`
-- [ ] `AuthContext` + `LoginForm`
-- [ ] Header `Authorization` en `taskApi.js`
-- [ ] Pruebas PT-04, PT-05
+- [x] Configuración JWT (encoder/decoder)
+- [x] `TokenService`
+- [x] Login con 401 genérico
+- [x] `GET /users/me`
+- [x] `AuthContext` + `LoginForm`
+- [x] Header `Authorization` en `taskApi.js`
+- [x] Pruebas PT-04, PT-05
 
 #### Feature F2 · Protección y aislamiento de datos
 
@@ -145,9 +145,9 @@ La planeación conserva la misma organización que se habría llevado a Jira (é
 | Código | Requerimiento | Resultado esperado | Estado |
 |---|---|---|---|
 | RF-SEG-01 | Registrar usuario | Crear cuenta con nombre, correo y contraseña. | ✅ HU-SEG-01 |
-| RF-SEG-02 | Autenticar usuario | Validar credenciales y emitir JWT firmado. | ⬜ |
-| RF-SEG-03 | Mantener sesión en React | Utilizar el token en las peticiones a los recursos protegidos. | ⬜ |
-| RF-SEG-04 | Consultar perfil | Obtener los datos no sensibles del usuario autenticado. | ⬜ |
+| RF-SEG-02 | Autenticar usuario | Validar credenciales y emitir JWT firmado. | ✅ HU-SEG-02 |
+| RF-SEG-03 | Mantener sesión en React | Utilizar el token en las peticiones a los recursos protegidos. | ✅ HU-SEG-02 |
+| RF-SEG-04 | Consultar perfil | Obtener los datos no sensibles del usuario autenticado. | ✅ HU-SEG-02 |
 | RF-SEG-05 | Proteger el CRUD | Requerir token válido en los recursos de tareas. | ⬜ |
 | RF-SEG-06 | Aislar tareas por usuario | Listar, consultar, crear, editar y eliminar solo tareas propias. | ⬜ |
 | RF-SEG-07 | Gestionar autorización por roles | Reservar un endpoint administrativo exclusivamente al rol `ADMIN`. | ⬜ |
@@ -162,7 +162,7 @@ Las reglas funcionales y de seguridad (2.1) están en [requirements_part2.md](do
 | HU | Historia | Criterios de aceptación | Estado |
 |---|---|---|---|
 | HU-SEG-01 | **Como** visitante, **quiero** crear una cuenta con mis datos y una contraseña, **para** usar la aplicación de manera personal. | Registro exitoso con rol USER, contraseña con hash y respuesta sin contraseña ni hash. Correo duplicado: `409 Conflict` sin crear un segundo usuario. | ✅ |
-| HU-SEG-02 | **Como** usuario registrado, **quiero** iniciar sesión con correo y contraseña, **para** acceder a mis tareas. | Credenciales válidas: `200 OK` y JWT firmado con expiración. Contraseña incorrecta: `401 Unauthorized`, sin token. | ⬜ |
+| HU-SEG-02 | **Como** usuario registrado, **quiero** iniciar sesión con correo y contraseña, **para** acceder a mis tareas. | Credenciales válidas: `200 OK` y JWT firmado con expiración. Contraseña incorrecta: `401 Unauthorized`, sin token. | ✅ |
 | HU-SEG-03 | **Como** usuario autenticado, **quiero** ver y modificar únicamente mis tareas, **para** mantener privada mi información. | `GET /tasks` devuelve solo las tareas propias. Operar sobre una tarea ajena: `404 Not Found` y la tarea queda sin cambios. | ⬜ |
 | HU-SEG-04 | **Como** responsable del sistema, **quiero** que las APIs de tareas exijan un JWT válido, **para** impedir operaciones anónimas o falsificadas. | Sin `Authorization`: `401`. Token alterado o expirado: `401`. | ⬜ |
 | HU-SEG-05 | **Como** administrador, **quiero** consultar un resumen general no sensible, **para** conocer la utilización del sistema. | Rol ADMIN: `200 OK` con métricas agregadas. Rol USER: `403 Forbidden`. | ⬜ |
@@ -254,6 +254,7 @@ Base: `http://localhost:8080/api/v1`. Todas las respuestas de error tienen la fo
 | Método | Endpoint | Cuerpo | Respuestas | HU |
 |---|---|---|---|---|
 | `POST` | `/auth/register` | `{"name", "email", "password"}` | `201` `{id, name, email, role}` · `400` datos inválidos · `409` correo ya registrado | HU-SEG-01 |
+| `POST` | `/auth/login` | `{"email", "password"}` | `200` `{tokenType, accessToken, expiresIn}` · `400` datos vacíos · `401` credenciales inválidas | HU-SEG-02 |
 
 Ejemplo de registro:
 
@@ -268,9 +269,28 @@ Content-Type: application/json
 {"id": 1, "name": "Ana Pérez", "email": "ana@example.com", "role": "USER"}
 ```
 
+Ejemplo de inicio de sesión:
+
+```http
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{"email": "ana@example.com", "password": "ContrasenaDemo123!"}
+```
+
+```json
+{"tokenType": "Bearer", "accessToken": "<JWT_FIRMADO>", "expiresIn": 1800}
+```
+
 ### 7.2 Autenticados
 
-_Se completa en las siguientes historias._
+Requieren la cabecera `Authorization: Bearer <JWT>`. Sin token, o con un token inválido o expirado, responden `401` con `{"status": 401, "message": ...}` y la cabecera `WWW-Authenticate: Bearer`.
+
+| Método | Endpoint | Respuestas | HU |
+|---|---|---|---|
+| `GET` | `/users/me` | `200` `{id, name, email, role}` del usuario del token · `401` | HU-SEG-02 |
+
+_Las rutas de tareas se protegen en HU-SEG-04._
 
 ### 7.3 Administrador
 
@@ -285,7 +305,15 @@ _Se completa en las siguientes historias._
 | Contraseñas | Solo se guarda el hash **BCrypt** (sal aleatoria por contraseña, factor de costo 10) mediante el bean `PasswordEncoder`. La contraseña ni su hash se devuelven nunca: `UserResponse` solo expone `id`, `name`, `email` y `role`. Longitud entre 8 y 72 caracteres (BCrypt solo procesa 72 bytes). | `SecurityConfig`, `AuthServiceImpl`, `RegisterRequest` |
 | Correo único | Se normaliza (`trim` + minúsculas) antes de consultar y guardar. La BD lo refuerza con `UNIQUE` y un `CHECK (email = LOWER(email))`. Si dos registros simultáneos chocan con el `UNIQUE`, también responde `409`. | `AuthServiceImpl`, `002_create_users.sql` |
 | Roles | El registro público asigna **siempre** `USER`; un campo `role` enviado en el JSON se ignora. | `AuthServiceImpl` |
-| Cadena de seguridad | `SecurityFilterChain` **stateless**, sin `httpBasic` ni `formLogin`, CSRF desactivado (no hay cookies de sesión; la identidad viajará en `Authorization`). Solo `POST /auth/register` y `/error` son públicos; el resto exige autenticación. | `SecurityConfig` |
+| Cadena de seguridad | `SecurityFilterChain` **stateless**, sin `httpBasic` ni `formLogin`, CSRF desactivado (no hay cookies de sesión; la identidad viaja en `Authorization`). Solo `POST /auth/register`, `POST /auth/login` y `/error` son públicos; el resto exige un JWT válido (OAuth2 Resource Server). | `SecurityConfig` |
+| Firma del JWT | **HS256** (HMAC-SHA256) con `NimbusJwtEncoder`/`NimbusJwtDecoder`, ambos construidos con la **misma** llave en `JwtConfig`. La firma se verifica en cada petición protegida; decodificar el Base64 no basta para que un token sea aceptado. | `JwtConfig` |
+| Contenido del JWT | `sub` (id del usuario), `iss` (`todo-api`), `iat`, `exp`, `role` y `name`. No incluye correo, contraseña ni hash. | `TokenService` |
+| Validación del JWT | Firma + `exp`/`nbf` + `iss` (`JwtValidators.createDefaultWithIssuer`) y un validador propio que exige `sub` numérico y `role` ∈ {`USER`, `ADMIN`}. El claim `role` se convierte en la autoridad `ROLE_USER` / `ROLE_ADMIN`. | `JwtConfig` |
+| Duración | **30 minutos** (`expiresIn: 1800`). No hay refresh tokens: al vencer, hay que iniciar sesión de nuevo. | `application.yaml` |
+| Llave de firma | Variable de entorno `JWT_SECRET` (Base64, mínimo 32 bytes), **sin valor por defecto**: si falta, la aplicación no arranca. Se lee desde el entorno o desde `.env` (excluido de Git). Las pruebas generan una llave aleatoria en cada ejecución. | `application.yaml`, `JwtConfig`, `JwtTestSupport` |
+| Login | Mismo `401` y mismo mensaje (`Invalid email or password`) si el correo no existe o la contraseña es incorrecta. Si el correo no existe se compara contra un hash de relleno para que el tiempo de respuesta no revele qué cuentas existen. | `AuthServiceImpl` |
+| Errores 401 | Un *entry point* propio responde en JSON con el mismo formato `{status, message}` y conserva `WWW-Authenticate: Bearer`. El mensaje es genérico y el token nunca se registra. | `JsonAuthenticationEntryPoint` |
+| Almacenamiento en el front | El JWT vive **solo en memoria** (`api/session.js`), nunca en `localStorage` ni en cookies. Al recargar la página se pierde la sesión y hay que volver a iniciar sesión (decisión del laboratorio). | `session.js`, `AuthContext.jsx` |
 | Logs | Se desactiva el usuario en memoria que Spring Boot crea por defecto, porque imprime una contraseña generada en los logs. `show-sql` solo muestra `?` en los parámetros, nunca hashes ni contraseñas. | `application.yaml` |
 | CORS | La cadena de seguridad reutiliza la configuración de `WebConfig` (`http://localhost:5173`), así que el *preflight* del navegador funciona sin autenticación. | `SecurityConfig`, `WebConfig` |
 
@@ -321,14 +349,23 @@ docker cp database/002_create_users.sql todo-postgres:/002_create_users.sql
 docker exec -i todo-postgres psql -U todo_user -d todo_db -f /002_create_users.sql
 ```
 
-**2. Back-end** (puerto `8080`):
+**2. Variables de entorno.** Crear el `.env` a partir del ejemplo y generar la llave del JWT (una sola vez):
+
+```bash
+cd back-end-lab06
+cp .env.example .env
+# Editar .env y pegar en JWT_SECRET la salida de: openssl rand -base64 32
+# (las variables DB_* son opcionales: por defecto apuntan a todo-postgres)
+```
+
+**3. Back-end** (puerto `8080`):
 
 ```bash
 cd back-end-lab06
 ./mvnw spring-boot:run
 ```
 
-**3. Front-end** (puerto `5173`):
+**4. Front-end** (puerto `5173`):
 
 ```bash
 cd front-end-lab06
@@ -336,7 +373,7 @@ npm install
 npm run dev
 ```
 
-**4. Pruebas:**
+**5. Pruebas:**
 
 ```bash
 cd back-end-lab06 && ./mvnw clean verify   # Requiere Docker (Testcontainers levanta un PostgreSQL aislado)
@@ -394,6 +431,40 @@ Todas las capturas están en [`docs/evidence/`](docs/evidence).
 | Back-end (`./mvnw clean verify`) | ![tests back](docs/evidence/hu01_tests_backend.png) |
 | Front-end (`npm test -- --run`) | ![tests front](docs/evidence/hu01_tests_frontend.png) |
 
+### HU-SEG-02 · Inicio de sesión
+
+**Back-end.**
+- Se agregó `spring-boot-starter-oauth2-resource-server`. `config/JwtConfig` crea, con la misma llave HS256, el `JwtEncoder` (firma) y el `JwtDecoder` (verificación de firma, `exp`, `iss`, `sub` y `role`), además del conversor del claim `role` a autoridades.
+- `service/TokenService` emite el token con `sub`, `iss`, `iat`, `exp` (30 min), `role` y `name`.
+- `AuthServiceImpl.login` busca el usuario por correo normalizado, verifica la contraseña con `PasswordEncoder.matches` y, si es válida, emite el token. Si no, lanza `InvalidCredentialsException` (`401`).
+- `AuthController` expone `POST /api/v1/auth/login`. `UserController` expone `GET /api/v1/users/me`, que toma la identidad del `sub` del JWT validado y responde con `UserService`.
+- `SecurityConfig` activa el Resource Server JWT y `JsonAuthenticationEntryPoint` responde los `401` en JSON.
+- La llave se configura con `JWT_SECRET` (ver [Variables de entorno](#92-variables-de-entorno)).
+
+| Evidencia | |
+|---|---|
+| Login correcto → `200` con JWT (token parcialmente oculto) | ![login 200](docs/evidence/hu02_login_200.png) |
+| Login incorrecto → `401` sin token | ![login 401](docs/evidence/hu02_login_401.png) |
+| Claims del JWT (`sub`, `iss`, `iat`, `exp`, `role`) | ![claims](docs/evidence/hu02_jwt_claims.png) |
+| `GET /users/me` con el token → `200` | ![users me](docs/evidence/hu02_users_me_200.png) |
+
+**Front-end.**
+- `api/session.js` guarda el token **en memoria** y arma la cabecera `Authorization: Bearer <JWT>`, que `taskApi.js` agrega a todas las peticiones de tareas.
+- `api/authApi.js` agrega `login` y `me`. `features/auth/context/AuthContext.jsx` (`AuthProvider` + `useAuth`) hace login → guarda el token → consulta el perfil.
+- `features/auth/components/LoginForm.jsx` sigue el mockup del laboratorio. `features/auth/pages/AuthPage.jsx` alterna entre inicio de sesión y registro.
+- `App.jsx` muestra `AuthPage` sin sesión y `TasksPage` con sesión.
+
+| Evidencia | |
+|---|---|
+| Pantalla de inicio de sesión | ![login React](docs/evidence/hu02_login_react.png) |
+
+**Pruebas.**
+
+| Evidencia | |
+|---|---|
+| Back-end (`./mvnw clean verify`) | ![tests back](docs/evidence/hu02_tests_backend.png) |
+| Front-end (`npm test -- --run`) | ![tests front](docs/evidence/hu02_tests_frontend.png) |
+
 ---
 
 ## 11. Pruebas y cobertura
@@ -402,10 +473,10 @@ Todas las capturas están en [`docs/evidence/`](docs/evidence).
 
 | Tipo | Herramientas | Clases |
 |---|---|---|
-| Unitarias de servicio | JUnit 5 + Mockito + AssertJ | `TaskServiceTest`, `AuthServiceTest` |
-| Controlador (slice web con la cadena de seguridad real) | `@WebMvcTest` + MockMvc + `@Import(SecurityConfig)` | `TaskControllerTest`, `AuthControllerTest` |
+| Unitarias de servicio | JUnit 5 + Mockito + AssertJ | `TaskServiceTest`, `AuthServiceTest`, `UserServiceTest`, `TokenServiceTest` (encoder/decoder reales) |
+| Controlador (slice web con la cadena de seguridad real) | `@WebMvcTest` + MockMvc + `@Import(SecurityConfig, JwtConfig, ...)` | `TaskControllerTest`, `AuthControllerTest` |
 | Integración (aplicación completa + PostgreSQL 17 real en Docker con los scripts de `database/`) | `@SpringBootTest` + MockMvc + Testcontainers | `AuthIntegrationTest` |
-| Front-end | Vitest + React Testing Library | `RegisterForm.test.jsx`, `authApi.test.js` y las pruebas del Lab 6 |
+| Front-end | Vitest + React Testing Library | `RegisterForm.test.jsx`, `LoginForm.test.jsx`, `App.test.jsx`, `authApi.test.js`, `taskApi.test.js` y las pruebas del Lab 6 |
 
 ### 11.2 Matriz de pruebas (PT)
 
@@ -414,8 +485,8 @@ Todas las capturas están en [`docs/evidence/`](docs/evidence).
 | PT-01 | Registrar usuario válido | `201`, usuario con rol `USER` | `AuthIntegrationTest.register_shouldCreateUserWithUserRole`, `register_shouldNotAllowChoosingAdminRole`; `AuthServiceTest.register_shouldAssignUserRole`; `AuthControllerTest.register_shouldReturn201WhenRequestIsValid` | ✅ |
 | PT-02 | Registrar un correo duplicado | `409`, sin duplicados | `AuthIntegrationTest.register_shouldNotCreateDuplicateEmail`, `register_shouldNotCreateDuplicateWithEquivalentEmail`; `AuthServiceTest.register_shouldNotSaveWhenEmailExists` | ✅ |
 | PT-03 | Guardar contraseña | Hash; no texto plano | `AuthIntegrationTest.register_shouldStorePasswordAsBcryptHash`; `AuthServiceTest.register_shouldStoreHashedPassword` | ✅ |
-| PT-04 | Login correcto | `200` con token firmado | | ⬜ |
-| PT-05 | Login incorrecto | `401` sin token | | ⬜ |
+| PT-04 | Login correcto | `200` con token firmado | `AuthIntegrationTest.login_shouldReturnSignedTokenWhenCredentialsAreValid`, `login_shouldAcceptEquivalentEmail`; `AuthServiceTest.login_shouldReturnTokenWhenCredentialsAreValid`; `TokenServiceTest` | ✅ |
+| PT-05 | Login incorrecto | `401` sin token | `AuthIntegrationTest.login_shouldReturn401WithoutTokenWhenPasswordIsWrong`, `login_shouldReturn401WhenEmailDoesNotExist`; `AuthServiceTest.login_shouldNotReturnTokenWhenPasswordIsWrong`, `login_shouldNotRevealWhetherEmailExists` | ✅ |
 | PT-06 | Consultar tareas sin token | `401` | | ⬜ |
 | PT-07 | Consultar tareas con token válido | `200` y solo las propias | | ⬜ |
 | PT-08 | Token modificado | `401` | | ⬜ |
@@ -430,13 +501,16 @@ Todas las capturas están en [`docs/evidence/`](docs/evidence).
 | PT-17 | Respuesta `401` desde una petición React | Redirige a inicio de sesión | | ⬜ |
 | PT-18 | Usuario distinto inicia sesión | Solo se muestran sus propias tareas | | ⬜ |
 
-Pruebas adicionales de HU-SEG-01: validaciones `400` (correo, contraseña corta, nombre vacío), registro público sin token y *preflight* CORS desde `localhost:5173`.
+Pruebas adicionales:
+- HU-SEG-01: validaciones `400` (correo, contraseña corta, nombre vacío), registro público sin token y *preflight* CORS desde `localhost:5173`.
+- HU-SEG-02: `GET /users/me` con token (`200`), sin token y con token inválido (`401` en JSON); token rechazado con otra llave; llave menor a 32 bytes rechazada; el JWT no incluye datos sensibles. En React: el login guarda el token en memoria, `taskApi` envía `Authorization: Bearer` y un login fallido no entra a las tareas.
 
 ### 11.3 Resultados
 
 | Corte | Back-end | Front-end | Cobertura JaCoCo (instrucciones / ramas)* |
 |---|---|---|---|
 | HU-SEG-01 | 44 pruebas, 0 fallos | 26 pruebas, 0 fallos | 100 % / 100 % |
+| HU-SEG-02 | 66 pruebas, 0 fallos | 41 pruebas, 0 fallos | 95,2 % / 81,6 % |
 
 \* JaCoCo excluye la clase de arranque, `dto/` y `entity/` (POJOs sin lógica). La regla de `mvn verify` exige como mínimo 70 %. La cobertura no reemplaza las pruebas de los escenarios de seguridad de la matriz.
 
@@ -445,7 +519,7 @@ Pruebas adicionales de HU-SEG-01: validaciones `400` (correo, contraseña corta,
 ## 12. Definition of Done
 
 - [ ] El CRUD original continúa funcionando para usuarios autenticados.
-- [ ] Es posible registrarse e iniciar sesión.
+- [x] Es posible registrarse e iniciar sesión.
 - [x] Las contraseñas se almacenan de forma segura.
 - [ ] El JWT está firmado, vence y se valida en el servidor.
 - [ ] Los endpoints de tareas rechazan peticiones sin autenticación.

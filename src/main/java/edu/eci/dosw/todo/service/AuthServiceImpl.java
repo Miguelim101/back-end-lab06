@@ -1,10 +1,13 @@
 package edu.eci.dosw.todo.service;
 
+import edu.eci.dosw.todo.dto.LoginRequest;
 import edu.eci.dosw.todo.dto.RegisterRequest;
+import edu.eci.dosw.todo.dto.TokenResponse;
 import edu.eci.dosw.todo.dto.UserResponse;
 import edu.eci.dosw.todo.entity.Role;
 import edu.eci.dosw.todo.entity.UserEntity;
 import edu.eci.dosw.todo.exception.EmailAlreadyExistsException;
+import edu.eci.dosw.todo.exception.InvalidCredentialsException;
 import edu.eci.dosw.todo.repository.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,11 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * ======================================================================================
- * == LAB 7: Lógica de registro. Normaliza el correo, impide duplicados, guarda solo   ==
- * ==        el hash BCrypt de la contraseña y asigna siempre el rol USER              ==
+ * == LAB 7: Lógica de registro y login. Normaliza el correo, impide duplicados,      ==
+ * ==        guarda solo el hash BCrypt, asigna siempre el rol USER y emite el JWT     ==
  * ======================================================================================
  */
 @Service
@@ -25,10 +30,15 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TokenService tokenService;
 
-    public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    // Hash de relleno para que un correo inexistente tarde lo mismo que una contraseña incorrecta
+    private String dummyPasswordHash;
+
+    public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, TokenService tokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.tokenService = tokenService;
     }
 
     @Override
@@ -52,6 +62,28 @@ public class AuthServiceImpl implements AuthService {
         } catch (DataIntegrityViolationException ex) {
             throw new EmailAlreadyExistsException(email);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TokenResponse login(LoginRequest request) {
+        Optional<UserEntity> user = userRepository.findByEmail(normalizeEmail(request.getEmail()));
+
+        if (user.isEmpty()) {
+            passwordEncoder.matches(request.getPassword(), dummyPasswordHash());
+            throw new InvalidCredentialsException();
+        }
+        if (!passwordEncoder.matches(request.getPassword(), user.get().getPasswordHash())) {
+            throw new InvalidCredentialsException();
+        }
+        return tokenService.generateToken(user.get());
+    }
+
+    private String dummyPasswordHash() {
+        if (dummyPasswordHash == null) {
+            dummyPasswordHash = passwordEncoder.encode(UUID.randomUUID().toString());
+        }
+        return dummyPasswordHash;
     }
 
     // "  Ana@Example.com " y "ana@example.com" son la misma cuenta

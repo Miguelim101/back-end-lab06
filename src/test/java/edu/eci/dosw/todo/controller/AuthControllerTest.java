@@ -1,12 +1,18 @@
 package edu.eci.dosw.todo.controller;
 
+import edu.eci.dosw.todo.config.JsonAuthenticationEntryPoint;
+import edu.eci.dosw.todo.config.JwtConfig;
 import edu.eci.dosw.todo.config.SecurityConfig;
+import edu.eci.dosw.todo.dto.LoginRequest;
 import edu.eci.dosw.todo.dto.RegisterRequest;
+import edu.eci.dosw.todo.dto.TokenResponse;
 import edu.eci.dosw.todo.dto.UserResponse;
 import edu.eci.dosw.todo.entity.Role;
 import edu.eci.dosw.todo.entity.UserEntity;
 import edu.eci.dosw.todo.exception.EmailAlreadyExistsException;
+import edu.eci.dosw.todo.exception.InvalidCredentialsException;
 import edu.eci.dosw.todo.service.AuthService;
+import edu.eci.dosw.todo.support.AbstractWebMvcSecurityTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,10 +32,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
-@Import(SecurityConfig.class)
-class AuthControllerTest {
+@Import({SecurityConfig.class, JwtConfig.class, JsonAuthenticationEntryPoint.class})
+class AuthControllerTest extends AbstractWebMvcSecurityTest {
 
     private static final String REGISTER_URL = "/api/v1/auth/register";
+    private static final String LOGIN_URL = "/api/v1/auth/login";
 
     @Autowired
     private MockMvc mockMvc;
@@ -133,5 +140,48 @@ class AuthControllerTest {
                         .content(json(new RegisterRequest("Ana Pérez", "ana@example.com", "ContrasenaDemo123!"))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409));
+    }
+
+    // ---------- POST /auth/login ----------
+
+    @Test
+    @DisplayName("POST /auth/login válido → 200 con token Bearer")
+    void login_shouldReturn200WithTokenWhenCredentialsAreValid() throws Exception {
+        when(authService.login(any(LoginRequest.class)))
+                .thenReturn(new TokenResponse("header.payload.signature", 1800));
+
+        mockMvc.perform(post(LOGIN_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new LoginRequest("ana@example.com", "ContrasenaDemo123!"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.accessToken").value("header.payload.signature"))
+                .andExpect(jsonPath("$.expiresIn").value(1800));
+    }
+
+    @Test
+    @DisplayName("POST /auth/login credenciales inválidas → 401 sin token")
+    void login_shouldReturn401WithoutTokenWhenCredentialsAreInvalid() throws Exception {
+        when(authService.login(any(LoginRequest.class))).thenThrow(new InvalidCredentialsException());
+
+        mockMvc.perform(post(LOGIN_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new LoginRequest("ana@example.com", "incorrecta"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").value("Invalid email or password"))
+                .andExpect(jsonPath("$.accessToken").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("POST /auth/login sin contraseña → 400")
+    void login_shouldReturn400WhenPasswordIsMissing() throws Exception {
+        mockMvc.perform(post(LOGIN_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new LoginRequest("ana@example.com", ""))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("La contraseña no puede ser vacía"));
+
+        verify(authService, never()).login(any());
     }
 }
