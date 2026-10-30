@@ -39,8 +39,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
                         // /error público para que un 400/404 no termine convertido en 401
                         .requestMatchers("/error").permitAll()
-                        // TEMPORAL: se elimina en HU-SEG-04 (protección del CRUD con JWT)
-                        .requestMatchers("/api/v1/tasks/**").permitAll()
+                        // HU-SEG-04: el CRUD de tareas (incluido el calendario ?from&to) y todo lo demás exige JWT válido
+                        .requestMatchers("/api/v1/tasks/**").authenticated()
                         .anyRequest().authenticated())
                 // Valida el Bearer token (firma, exp, iss, sub, role) con el JwtDecoder de JwtConfig
                 .oauth2ResourceServer(oauth2 -> oauth2
