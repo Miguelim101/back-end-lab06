@@ -29,7 +29,6 @@ public class TaskUpdateRequest {
     @NotNull(message = "La prioridad no puede ser vacía")
     private TaskPriority priority = TaskPriority.MEDIUM;
 
-    @FutureOrPresent(message = "La fecha de vencimiento debe ser una fecha futura")
     private LocalDate dueDate;
 
     // Constructors
