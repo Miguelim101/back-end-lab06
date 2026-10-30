@@ -3,6 +3,11 @@
 #======================================================================#
 
 spring:
+  # LAB 7: los usuarios viven en la tabla users. Se desactiva el usuario en memoria que Spring Boot
+  # crea por defecto, porque además imprime una contraseña generada en los logs
+  autoconfigure:
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+
   # Configuración de la conexión (Con las variables de entorno)
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/todo_db}
