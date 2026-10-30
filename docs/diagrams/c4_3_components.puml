@@ -1,0 +1,50 @@
+@startuml c4_3_components
+' C4 · Nivel 3 · Componentes de la API REST (Lab 7, implementación final)
+!include <C4/C4_Component>
+
+AddElementTag("nuevo", $bgColor="#0b6e4f", $fontColor="#ffffff", $legendText="Nuevo en Lab 7")
+AddElementTag("modificado", $bgColor="#b45309", $fontColor="#ffffff", $legendText="Modificado en Lab 7")
+title ToDo · Nivel 3 · Componentes de la API
+
+Container(spa, "Front-end SPA", "React", "Envía Authorization: Bearer <JWT>")
+ContainerDb(db, "PostgreSQL", "Docker: todo-postgres", "users, tasks (user_id FK)")
+
+Container_Boundary(api, "API REST · Spring Boot") {
+    Component(chain, "SecurityFilterChain", "SecurityConfig", "Stateless + CORS. Públicos: /auth/register, /auth/login. /admin/** exige ROLE_ADMIN; el resto, JWT válido.", $tags="nuevo")
+    Component(jwt, "JWT", "JwtConfig + TokenService", "Firma HS256; valida firma, exp, iss, sub y role; role -> ROLE_*", $tags="nuevo")
+    Component(handlers, "Errores de seguridad", "JsonAuthenticationEntryPoint + JsonAccessDeniedHandler", "401 y 403 en JSON {status, message}", $tags="nuevo")
+    Component(authCtrl, "AuthController", "REST", "POST /auth/register, POST /auth/login", $tags="nuevo")
+    Component(userCtrl, "UserController", "REST", "GET /users/me", $tags="nuevo")
+    Component(adminCtrl, "AdminController", "REST", "GET /admin/summary", $tags="nuevo")
+    Component(taskCtrl, "TaskController", "REST", "CRUD /tasks + ?from&to; userId = sub del JWT", $tags="modificado")
+    Component(authSvc, "AuthService", "Service", "Registro (BCrypt, rol USER) y login", $tags="nuevo")
+    Component(userSvc, "UserService", "Service", "Perfil propio", $tags="nuevo")
+    Component(adminSvc, "AdminService", "Service", "Solo conteos agregados", $tags="nuevo")
+    Component(taskSvc, "TaskService", "Service", "Reglas del CRUD filtradas por propietario (ajena = 404)", $tags="modificado")
+    Component(userRepo, "UserRepository", "Spring Data JPA", "users", $tags="nuevo")
+    Component(taskRepo, "TaskRepository", "Spring Data JPA", "tasks por owner", $tags="modificado")
+    Component(errors, "GlobalExceptionHandler", "@RestControllerAdvice", "400 / 401 login / 404 / 409", $tags="modificado")
+}
+
+Rel(spa, chain, "Peticiones HTTP", "JSON")
+Rel(chain, jwt, "Valida el Bearer token")
+Rel(chain, handlers, "Rechaza: 401 / 403")
+Rel(chain, authCtrl, "Público")
+Rel(chain, userCtrl, "Autenticado")
+Rel(chain, taskCtrl, "Autenticado")
+Rel(chain, adminCtrl, "ROLE_ADMIN")
+Rel(authCtrl, authSvc, "Usa")
+Rel(authSvc, jwt, "Emite token")
+Rel(authSvc, userRepo, "Usa")
+Rel(userCtrl, userSvc, "Usa (sub)")
+Rel(userSvc, userRepo, "findById")
+Rel(adminCtrl, adminSvc, "Usa")
+Rel(adminSvc, userRepo, "count")
+Rel(adminSvc, taskRepo, "count")
+Rel(taskCtrl, taskSvc, "Usa (userId del JWT)")
+Rel(taskSvc, taskRepo, "Usa")
+Rel(taskSvc, userRepo, "Propietario al crear")
+Rel(userRepo, db, "JPA")
+Rel(taskRepo, db, "JPA")
+SHOW_LEGEND()
+@enduml

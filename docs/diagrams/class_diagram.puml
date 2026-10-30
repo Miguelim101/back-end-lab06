@@ -1,0 +1,213 @@
+@startuml class_diagram
+' Diagrama de clases · API ToDo (Lab 7, implementación final).
+' <<nuevo>> = agregado en Lab 7, <<modificado>> = cambió en Lab 7, sin estereotipo = sin cambios desde Lab 6
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam class {
+  BackgroundColor<<nuevo>> #d1fae5
+  BackgroundColor<<modificado>> #fde68a
+}
+left to right direction
+title API ToDo · Diagrama de clases (Lab 7)
+
+package config {
+  class SecurityConfig <<nuevo>> {
+    + securityFilterChain(http, jwtAuthenticationConverter, entryPoint, accessDeniedHandler): SecurityFilterChain
+    + passwordEncoder(): PasswordEncoder
+  }
+  class JwtConfig <<nuevo>> {
+    - secretKey: SecretKey
+    - issuer: String
+    + jwtEncoder(): JwtEncoder
+    + jwtDecoder(): JwtDecoder
+    + jwtAuthenticationConverter(): JwtAuthenticationConverter
+  }
+  class JsonAuthenticationEntryPoint <<nuevo>> {
+    + commence(request, response, ex)
+  }
+  class JsonAccessDeniedHandler <<nuevo>> {
+    + handle(request, response, ex)
+  }
+  class WebConfig {
+    + addCorsMappings(registry)
+  }
+}
+
+package controller {
+  class AuthController <<nuevo>> {
+    + register(RegisterRequest): ResponseEntity<UserResponse>
+    + login(LoginRequest): ResponseEntity<TokenResponse>
+  }
+  class UserController <<nuevo>> {
+    + me(Jwt): ResponseEntity<UserResponse>
+  }
+  class AdminController <<nuevo>> {
+    + summary(): ResponseEntity<AdminSummaryResponse>
+  }
+  class TaskController <<modificado>> {
+    - currentUserId(Jwt): Long
+    + getAllTasks(Jwt, from, to)
+    + getTaskById(Jwt, id)
+    + createTask(Jwt, TaskCreateRequest)
+    + updateTask(Jwt, id, TaskUpdateRequest)
+    + deleteTask(Jwt, id)
+  }
+}
+
+package service {
+  interface AuthService <<nuevo>> {
+    + register(RegisterRequest): UserResponse
+    + login(LoginRequest): TokenResponse
+  }
+  class AuthServiceImpl <<nuevo>>
+  class TokenService <<nuevo>> {
+    + generateToken(UserEntity): TokenResponse
+  }
+  interface UserService <<nuevo>> {
+    + findById(id): UserResponse
+  }
+  class UserServiceImpl <<nuevo>>
+  interface AdminService <<nuevo>> {
+    + summary(): AdminSummaryResponse
+  }
+  class AdminServiceImpl <<nuevo>>
+  interface TaskService <<modificado>> {
+    + findAll(userId): List<TaskResponse>
+    + findById(userId, id): TaskResponse
+    + create(userId, TaskCreateRequest): TaskResponse
+    + update(userId, id, TaskUpdateRequest): TaskResponse
+    + delete(userId, id)
+    + findByDueDateBetween(userId, from, to): List<TaskResponse>
+  }
+  class TaskServiceImpl <<modificado>>
+}
+
+package repository {
+  interface UserRepository <<nuevo>> {
+    + findByEmail(email): Optional<UserEntity>
+    + existsByEmail(email): boolean
+    + countByRole(role): long
+  }
+  interface TaskRepository <<modificado>> {
+    + findAllByOwnerId(ownerId): List<TaskEntity>
+    + findByIdAndOwnerId(id, ownerId): Optional<TaskEntity>
+    + existsByIdAndOwnerId(id, ownerId): boolean
+    + findByOwnerIdAndDueDateBetween(ownerId, from, to): List<TaskEntity>
+    + countByStatus(status): long
+  }
+}
+
+package entity {
+  class UserEntity <<nuevo>> {
+    - id: long
+    - name: String
+    - email: String
+    - passwordHash: String
+    - role: Role
+    - createdAt: LocalDateTime
+  }
+  enum Role <<nuevo>> {
+    USER
+    ADMIN
+  }
+  class TaskEntity <<modificado>> {
+    - id: long
+    - title: String
+    - description: String
+    - status: TaskStatus
+    - priority: TaskPriority
+    - dueDate: LocalDate
+    - createdAt: LocalDateTime
+    - owner: UserEntity
+  }
+  enum TaskStatus {
+    PENDING
+    IN_PROGRESS
+    COMPLETED
+  }
+  enum TaskPriority {
+    LOW
+    MEDIUM
+    HIGH
+  }
+}
+
+package dto {
+  class RegisterRequest <<nuevo>> {
+    - name: String
+    - email: String
+    - password: String
+  }
+  class LoginRequest <<nuevo>> {
+    - email: String
+    - password: String
+  }
+  class UserResponse <<nuevo>> {
+    - id: long
+    - name: String
+    - email: String
+    - role: Role
+  }
+  class TokenResponse <<nuevo>> {
+    - tokenType: String
+    - accessToken: String
+    - expiresIn: long
+  }
+  class AdminSummaryResponse <<nuevo>> {
+    - totalUsers: long
+    - totalAdmins: long
+    - totalTasks: long
+    - tasksByStatus: Map<TaskStatus, Long>
+  }
+  class TaskCreateRequest
+  class TaskUpdateRequest
+  class TaskResponse
+}
+
+package exception {
+  class GlobalExceptionHandler <<modificado>> {
+    400 · 401 · 404 · 409
+  }
+  class TaskNotFoundException
+  class InvalidDateRangeException
+  class EmailAlreadyExistsException <<nuevo>>
+  class InvalidCredentialsException <<nuevo>>
+  class UserNotFoundException <<nuevo>>
+}
+
+AuthServiceImpl ..|> AuthService
+UserServiceImpl ..|> UserService
+AdminServiceImpl ..|> AdminService
+TaskServiceImpl ..|> TaskService
+
+AuthController --> AuthService
+UserController --> UserService
+AdminController --> AdminService
+TaskController --> TaskService
+
+AuthServiceImpl --> UserRepository
+AuthServiceImpl --> TokenService
+AuthServiceImpl ..> EmailAlreadyExistsException
+AuthServiceImpl ..> InvalidCredentialsException
+UserServiceImpl --> UserRepository
+UserServiceImpl ..> UserNotFoundException
+AdminServiceImpl --> UserRepository
+AdminServiceImpl --> TaskRepository
+TaskServiceImpl --> TaskRepository
+TaskServiceImpl --> UserRepository : propietario al crear
+TaskServiceImpl ..> TaskNotFoundException
+TokenService --> JwtConfig : usa JwtEncoder
+
+SecurityConfig ..> JwtConfig : JwtDecoder + converter
+SecurityConfig --> JsonAuthenticationEntryPoint : 401
+SecurityConfig --> JsonAccessDeniedHandler : 403
+
+UserEntity "1" -- "0..*" TaskEntity : owner
+UserEntity --> Role
+TaskEntity --> TaskStatus
+TaskEntity --> TaskPriority
+
+UserRepository ..> UserEntity
+TaskRepository ..> TaskEntity
+
+@enduml

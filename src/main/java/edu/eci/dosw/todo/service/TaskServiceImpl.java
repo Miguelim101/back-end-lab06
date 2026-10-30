@@ -6,9 +6,12 @@ import edu.eci.dosw.todo.dto.TaskUpdateRequest;
 import edu.eci.dosw.todo.entity.TaskEntity;
 import edu.eci.dosw.todo.entity.TaskPriority;
 import edu.eci.dosw.todo.entity.TaskStatus;
+import edu.eci.dosw.todo.entity.UserEntity;
 import edu.eci.dosw.todo.exception.InvalidDateRangeException;
 import edu.eci.dosw.todo.exception.TaskNotFoundException;
+import edu.eci.dosw.todo.exception.UserNotFoundException;
 import edu.eci.dosw.todo.repository.TaskRepository;
+import edu.eci.dosw.todo.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,15 +32,17 @@ import java.util.stream.Collectors;
 public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
 
-    public TaskServiceImpl(TaskRepository taskRepository) {
+    public TaskServiceImpl(TaskRepository taskRepository, UserRepository userRepository) {
         this.taskRepository = taskRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<TaskResponse> findAll() {
-        return taskRepository.findAll().stream()
+    public List<TaskResponse> findAll(Long userId) {
+        return taskRepository.findAllByOwnerId(userId).stream()
                 .map(TaskResponse::new)
                 .collect(Collectors.toList()); // La respuesta contiene una lista con los datos de la Task filtrando con
                                                // TaskResponse (evitando enviar datos que no se deben)
@@ -45,16 +50,22 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    public TaskResponse findById(Long id) {
-        TaskEntity task = taskRepository.findById(id)
+    public TaskResponse findById(Long userId, Long id) {
+        // Si la tarea es de otro usuario la consulta no la encuentra: mismo 404 que si no existiera
+        TaskEntity task = taskRepository.findByIdAndOwnerId(id, userId)
                 .orElseThrow(() -> new TaskNotFoundException(id));
         return new TaskResponse(task);
     }
 
     @Override
     @Transactional
-    public TaskResponse create(TaskCreateRequest request) {
+    public TaskResponse create(Long userId, TaskCreateRequest request) {
+        // El propietario sale del usuario autenticado, nunca de un id enviado por el cliente
+        UserEntity owner = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+
         TaskEntity task = new TaskEntity();
+        task.setOwner(owner);
 
         task.setTitle(request.getTitle());
         task.setDescription(request.getDescription());
@@ -76,8 +87,8 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    public TaskResponse update(Long id, TaskUpdateRequest request) {
-        TaskEntity existingtTask = taskRepository.findById(id)
+    public TaskResponse update(Long userId, Long id, TaskUpdateRequest request) {
+        TaskEntity existingtTask = taskRepository.findByIdAndOwnerId(id, userId)
                 .orElseThrow(() -> new TaskNotFoundException(id));
 
         existingtTask.setTitle(request.getTitle());
@@ -91,8 +102,9 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public void delete(Long id) {
-        if(!taskRepository.existsById(id)){
+    @Transactional
+    public void delete(Long userId, Long id) {
+        if(!taskRepository.existsByIdAndOwnerId(id, userId)){
             throw new TaskNotFoundException(id);
         }
         taskRepository.deleteById(id);
@@ -100,7 +112,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TaskResponse> findByDueDateBetween(LocalDate from, LocalDate to) {
+    public List<TaskResponse> findByDueDateBetween(Long userId, LocalDate from, LocalDate to) {
         // El rango debe estar completo y ser coherente antes de consultar la base de datos
         if (from == null || to == null) {
             throw new InvalidDateRangeException("Both 'from' and 'to' dates are required");
@@ -109,7 +121,7 @@ public class TaskServiceImpl implements TaskService {
             throw new InvalidDateRangeException("'from' date must be before or equal to 'to' date");
         }
 
-        return taskRepository.findByDueDateBetween(from, to).stream()
+        return taskRepository.findByOwnerIdAndDueDateBetween(userId, from, to).stream()
                 .map(TaskResponse::new)
                 .collect(Collectors.toList());
     }
